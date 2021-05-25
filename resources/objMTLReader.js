@@ -1,11 +1,6 @@
-// reader obj and material file
-
 const keywordRE = /(\w*)(?: )*(.*)/; // the same for obj and mtl
 
-const keywordsOMTL = {};
-
 function parseOBJ(text) {
-  console.log(text);
   // fill the 0th value with 0. The system is 1 based.
   let positionsOBJ = [[0, 0, 0]];
   let texcoordsOBJ = [[0, 0]];
@@ -23,10 +18,8 @@ function parseOBJ(text) {
 
   // save here names of material lib used by the geometry (mtllib keyword)
   let materialLibs = [];
-
   // save here different geometries (they are divided by usemtl, this because each part with a different material requests different rendering)
   let geometries = [];
-
   // used to save stuff in geometries
   let geometry;
   // default settings (it's useful bc i have to change these values when parsed from the obj )
@@ -136,6 +129,9 @@ function parseOBJ(text) {
   };
 }
 
+function parseMLT() {}
+
+// to use for obj and mtl
 function _parse(line, keywords) {
   // line is empty or is a comment
   if (line === "" || line[0] === "#") {
@@ -161,8 +157,6 @@ function _parse(line, keywords) {
   // call handler for each type of keyword
   handler(parts, unparsedArgs);
 }
-
-function parseMLT() {}
 
 // functions to export
 export { parseOBJ, parseMLT };

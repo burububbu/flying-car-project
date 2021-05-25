@@ -6,4 +6,8 @@ async function loadText(path) {
   });
 }
 
-export { loadText };
+function degToRad(deg) {
+  return (deg * Math.PI) / 180;
+}
+
+export { loadText, degToRad };
