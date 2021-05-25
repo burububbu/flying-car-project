@@ -1,6 +1,16 @@
 import { parseOBJ, parseMLT } from "./resources/objMTLReader.js";
 import * as utils from "./resources/utils.js";
 
+// data useful for the computing of
+let setView = {
+  cameraTarget: [0, 3, 0],
+  cameraPosition: [0, 7, 10],
+  zNear: 0.1,
+  zFar: 50,
+  fieldOfView: 60,
+  up: [0, 1, 0], // view-up vector
+};
+
 async function loadOBJ() {
   let path = "./obj/chair/";
   let objectName = "chair";
@@ -54,13 +64,6 @@ async function main() {
     };
   });
 
-  let cameraTarget = [0, 0, 0];
-  let cameraPosition = [0, 0, 4];
-  let zNear = 0.1;
-  let zFar = 50;
-
-  let time = 1;
-
   function render(time) {
     time *= 0.001;
 
@@ -69,36 +72,21 @@ async function main() {
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
 
-    const fieldOfViewRadians = utils.degToRad(60);
-    const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const projection = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
+    computeSharedUniforms(gl, programInfo);
 
-    const up = [0, 1, 0];
-    // Compute the camera's matrix using look at.
-    const camera = m4.lookAt(cameraPosition, cameraTarget, up);
-
-    // Make a view matrix from the camera matrix.
-    const view = m4.inverse(camera);
-
-    const sharedUniforms = {
-      u_lightDirection: m4.normalize([-1, 3, 5]),
-      u_view: view,
-      u_projection: projection,
-    };
-
+    // ----  use program -------
     gl.useProgram(programInfo.program);
 
-    // calls gl.uniform
-    webglUtils.setUniforms(programInfo, sharedUniforms);
-
-    // compute the world matrix once since all parts
+    // word matrix is theorically different for each object
+    // in these case all geometries are related to the same object, so we compute it only once
     // are at the same space.
     const u_world = m4.yRotation(time);
 
     for (let { bufferInfo, material } of parts) {
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
       webglUtils.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-      // calls gl.uniform
+
+      // set "personal" uniforms
       webglUtils.setUniforms(programInfo, {
         u_world,
         u_diffuse: material.u_diffuse,
@@ -109,6 +97,32 @@ async function main() {
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
+}
+
+// set shared uniforms
+function computeSharedUniforms(gl, programInfo) {
+  const projection = m4.perspective(
+    utils.degToRad(setView.fieldOfView),
+    gl.canvas.clientWidth / gl.canvas.clientHeight, //aspect
+    setView.zNear,
+    setView.zFar
+  );
+  // Compute the camera's matrix using look at.
+  const camera = m4.lookAt(
+    setView.cameraPosition,
+    setView.cameraTarget,
+    setView.up
+  );
+  // Make a view matrix from the camera matrix.
+  const view = m4.inverse(camera);
+
+  const sharedUniforms = {
+    u_lightDirection: m4.normalize([-1, 3, 5]),
+    u_view: view,
+    u_projection: projection,
+  };
+
+  webglUtils.setUniforms(programInfo, sharedUniforms);
 }
 
 main();
