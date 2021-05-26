@@ -3,8 +3,8 @@ import * as utils from "./resources/utils.js";
 
 // data useful for the computing of
 let setView = {
-  cameraTarget: [0, 5, 0],
-  cameraPosition: [0, 5, 15],
+  cameraTarget: [0, 50, 0],
+  cameraPosition: [0, 5, 400],
   zNear: 1,
   zFar: 4000,
   fieldOfView: 60,
@@ -12,8 +12,8 @@ let setView = {
 };
 
 async function loadOBJ() {
-  let path = "./obj/chair/";
-  let objectName = "Chair";
+  let path = "./obj/among us/";
+  let objectName = "among us";
 
   let textOBJ = await utils.loadText(path + objectName + ".obj");
   let textMTL = await utils.loadText(path + objectName + ".mtl");
@@ -21,10 +21,6 @@ async function loadOBJ() {
   let dataOBJ = parseOBJ(textOBJ); // {geometries : [], materiallibs: []}
 
   let dataMTL = parseMTL(textMTL);
-
-  // console.log("OBJ: \n", dataOBJ);
-  // console.log(materialOBJ);
-
   return [dataOBJ, dataMTL];
 }
 
@@ -43,67 +39,57 @@ async function main() {
 
   let programInfo = webglUtils.createProgramInfo(gl, [vSrc, fSrc]);
 
-  // ------------ load chair object -----------------
-  // sOBJ -> all  available materials with settings
-  let [dataOBJ, materialsOBJ] = await loadOBJ();
-  console.log(dataOBJ);
-  console.log(materialsOBJ);
+  // ------------ load object -----------------
+  let [obj, materials] = await loadOBJ();
 
   // create buffer info and material information for each geometry in geometries
   // parts = [element1, element2] where element = {bufferInfo, material}
+  const parts = obj.geometries.map(({ material, data }) => {
+    data.color = { value: [1, 1, 1, 1] }; // for now, fixed color
 
-  // during render time, iterate over parts and draw everything each time
-  let parts = dataOBJ.geometries.map(({ material, data }) => {
-    let arrays = {
-      position: { numComponents: 3, data: data.position },
-      normal: { numComponents: 3, data: data.normal },
-    };
-    let bufferInfo = webglUtils.createBufferInfoFromArrays(gl, arrays);
-    console.log(materialsOBJ[material]);
+    const bufferInfo = webglUtils.createBufferInfoFromArrays(gl, data);
     return {
-      material: materialsOBJ[material],
+      material: materials[material],
       bufferInfo,
     };
   });
 
   function render(time) {
-    time *= 0.001;
+    time *= 0.001; // convert to seconds
 
     webglUtils.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
 
-    // ----  use program -------
     gl.useProgram(programInfo.program);
 
     computeSharedUniforms(gl, programInfo);
 
-    // word matrix is theorically different for each object
-    // in these case all geometries are related to the same object, so we compute it only once
+    // compute the world matrix once since all parts
     // are at the same space.
-    const u_world = m4.yRotation(time);
+    let u_world = m4.yRotation(time);
+    // u_world = m4.translate(u_world, ...objOffset);
 
-    console.log(parts);
-    for (const { material, bufferInfo } of parts) {
+    for (const { bufferInfo, material } of parts) {
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
       webglUtils.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-      console.log(material);
       // calls gl.uniform
-      let tempdiffuse = [...material.diffuse, 1];
-      webglUtils.setUniforms(programInfo, {
-        u_world,
-        u_diffuse: tempdiffuse,
-      });
+      webglUtils.setUniforms(
+        programInfo,
+        {
+          u_world,
+        },
+        material
+      );
       // calls gl.drawArrays or gl.drawElements
       webglUtils.drawBufferInfo(gl, bufferInfo);
     }
+
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
 }
 
-// set shared uniforms
 function computeSharedUniforms(gl, programInfo) {
   const projection = m4.perspective(
     utils.degToRad(setView.fieldOfView),
@@ -130,3 +116,82 @@ function computeSharedUniforms(gl, programInfo) {
 }
 
 main();
+
+//   // during render time, iterate over parts and draw everything each time
+//   let parts = dataOBJ.geometries.map(({ material, data }) => {
+//     let arrays = {
+//       position: { numComponents: 3, data: data.position },
+//       normal: { numComponents: 3, data: data.normal },
+//     };
+//     let bufferInfo = webglUtils.createBufferInfoFromArrays(gl, arrays);
+//     console.log(materialsOBJ[material]);
+//     return {
+//       material: materialsOBJ[material],
+//       bufferInfo,
+//     };
+//   });
+
+//   function render(time) {
+//     time *= 0.001;
+
+//     webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+//     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+//     gl.enable(gl.DEPTH_TEST);
+//     gl.enable(gl.CULL_FACE);
+
+//     // ----  use program -------
+//     gl.useProgram(programInfo.program);
+
+//     computeSharedUniforms(gl, programInfo);
+
+//     // word matrix is theorically different for each object
+//     // in these case all geometries are related to the same object, so we compute it only once
+//     // are at the same space.
+//     const u_world = m4.yRotation(time);
+
+//     console.log(parts);
+//     for (const { material, bufferInfo } of parts) {
+//       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
+//       webglUtils.setBuffersAndAttributes(gl, programInfo, bufferInfo);
+//       console.log(material);
+//       // calls gl.uniform
+//       let tempdiffuse = [...material.diffuse, 1];
+//       webglUtils.setUniforms(programInfo, {
+//         u_world,
+//         u_diffuse: tempdiffuse,
+//       });
+//       // calls gl.drawArrays or gl.drawElements
+//       webglUtils.drawBufferInfo(gl, bufferInfo);
+//     }
+//     requestAnimationFrame(render);
+//   }
+//   requestAnimationFrame(render);
+// }
+
+// // set shared uniforms
+// function computeSharedUniforms(gl, programInfo) {
+//   const projection = m4.perspective(
+//     utils.degToRad(setView.fieldOfView),
+//     gl.canvas.clientWidth / gl.canvas.clientHeight, //aspect
+//     setView.zNear,
+//     setView.zFar
+//   );
+//   // Compute the camera's matrix using look at.
+//   const camera = m4.lookAt(
+//     setView.cameraPosition,
+//     setView.cameraTarget,
+//     setView.up
+//   );
+//   // Make a view matrix from the camera matrix.
+//   const view = m4.inverse(camera);
+
+//   const sharedUniforms = {
+//     u_lightDirection: m4.normalize([-1, 3, 5]),
+//     u_view: view,
+//     u_projection: projection,
+//   };
+
+//   webglUtils.setUniforms(programInfo, sharedUniforms);
+// }
+
+// main();
