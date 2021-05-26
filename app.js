@@ -1,10 +1,10 @@
-import { parseOBJ, parseMLT } from "./resources/objMTLReader.js";
+import { parseOBJ, parseMTL } from "./resources/objMTLReader.js";
 import * as utils from "./resources/utils.js";
 
 // data useful for the computing of
 let setView = {
   cameraTarget: [0, 5, 0],
-  cameraPosition: [0, 5, 10],
+  cameraPosition: [0, 5, 15],
   zNear: 1,
   zFar: 4000,
   fieldOfView: 60,
@@ -13,19 +13,19 @@ let setView = {
 
 async function loadOBJ() {
   let path = "./obj/chair/";
-  let objectName = "chairReal";
+  let objectName = "Chair";
 
   let textOBJ = await utils.loadText(path + objectName + ".obj");
-  // let textMTL = await utils.loadText(path + objectName + ".mtl");
+  let textMTL = await utils.loadText(path + objectName + ".mtl");
 
   let dataOBJ = parseOBJ(textOBJ); // {geometries : [], materiallibs: []}
-  let materialOBJ = undefined;
-  // let materialOBJ = parseMLT(textMTL);
+
+  let dataMTL = parseMTL(textMTL);
 
   // console.log("OBJ: \n", dataOBJ);
   // console.log(materialOBJ);
 
-  return [dataOBJ, materialOBJ];
+  return [dataOBJ, dataMTL];
 }
 
 async function main() {
@@ -44,14 +44,16 @@ async function main() {
   let programInfo = webglUtils.createProgramInfo(gl, [vSrc, fSrc]);
 
   // ------------ load chair object -----------------
-  let [dataOBJ, _] = await loadOBJ();
+  // sOBJ -> all  available materials with settings
+  let [dataOBJ, materialsOBJ] = await loadOBJ();
   console.log(dataOBJ);
+  console.log(materialsOBJ);
 
   // create buffer info and material information for each geometry in geometries
   // parts = [element1, element2] where element = {bufferInfo, material}
 
   // during render time, iterate over parts and draw everything each time
-  let parts = dataOBJ.geometries.map(({ data }) => {
+  let parts = dataOBJ.geometries.map(({ material, data }) => {
     let arrays = {
       position: { numComponents: 3, data: data.position },
       normal: { numComponents: 3, data: data.normal },
@@ -59,9 +61,7 @@ async function main() {
     let bufferInfo = webglUtils.createBufferInfoFromArrays(gl, arrays);
 
     return {
-      material: {
-        u_diffuse: [Math.random(), Math.random(), Math.random(), 1],
-      },
+      material: materialsOBJ[material],
       bufferInfo,
     };
   });
@@ -84,14 +84,14 @@ async function main() {
     // are at the same space.
     const u_world = m4.yRotation(time);
 
-    for (let { bufferInfo, material } of parts) {
+    for (const { bufferInfo, material } of parts) {
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
       webglUtils.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-
-      // set "personal" uniforms
+      // calls gl.uniform
+      let tempdiffuse = [...material.diffuse, 1];
       webglUtils.setUniforms(programInfo, {
         u_world,
-        u_diffuse: material.u_diffuse,
+        u_diffuse: tempdiffuse,
       });
       // calls gl.drawArrays or gl.drawElements
       webglUtils.drawBufferInfo(gl, bufferInfo);

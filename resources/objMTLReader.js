@@ -128,7 +128,55 @@ function parseOBJ(text) {
   };
 }
 
-function parseMLT() {}
+function parseMTL(text) {
+  // all materials info {kA: ..., kn: ..., ...}
+  let materials = {};
+  // current material
+  let material;
+
+  let keywordsMTL = {
+    newmtl: (_, unparsedArgs) => {
+      material = {
+        diffuse: [1, 1, 1, 1],
+        ambient: [0, 0, 0],
+        specular: [1, 1, 1],
+        shininess: 400,
+        opacity: 1,
+      }; // default value
+      materials[unparsedArgs] = material;
+    },
+    Ns: (parts, _) => {
+      material.shininess = parseFloat(parts[0]);
+    },
+    Ka: (parts, _) => {
+      material.ambient = parts.map(parseFloat);
+    },
+    Kd: (parts, _) => {
+      material.diffuse = parts.map(parseFloat);
+    },
+    Ks: (parts, _) => {
+      material.specular = parts.map(parseFloat);
+    },
+    Ke: (parts, _) => {
+      material.emissive = parts.map(parseFloat);
+    },
+    Ni: (parts, _) => {
+      material.opticalDensity = parseFloat(parts[0]);
+    },
+    d: (parts, _) => {
+      material.opacity = parseFloat(parts[0]);
+    },
+    illum: (parts, _) => {
+      material.illum = parseInt(parts[0]);
+    },
+  };
+
+  let lines = text.split("\n");
+
+  lines.forEach((line) => _parse(line, keywordsMTL));
+
+  return materials;
+}
 
 // to use for obj and mtl
 function _parse(line, keywords) {
@@ -159,4 +207,4 @@ function _parse(line, keywords) {
 }
 
 // functions to export
-export { parseOBJ, parseMLT };
+export { parseOBJ, parseMTL };
