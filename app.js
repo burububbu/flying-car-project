@@ -3,23 +3,24 @@ import * as utils from "./resources/utils.js";
 
 // data useful for the computing of
 let setView = {
-  cameraTarget: [0, 3, 0],
-  cameraPosition: [0, 7, 10],
-  zNear: 0.1,
-  zFar: 50,
+  cameraTarget: [0, 0, 0],
+  cameraPosition: [0, 0, 50],
+  zNear: 1,
+  zFar: 4000,
   fieldOfView: 60,
   up: [0, 1, 0], // view-up vector
 };
 
 async function loadOBJ() {
-  let path = "./obj/chair/";
-  let objectName = "chair";
+  let path = "./obj/CyberpunkDeLorean/";
+  let objectName = "CyberpunkDeLorean";
 
   let textOBJ = await utils.loadText(path + objectName + ".obj");
-  let textMTL = await utils.loadText(path + objectName + ".mtl");
+  // let textMTL = await utils.loadText(path + objectName + ".mtl");
 
   let dataOBJ = parseOBJ(textOBJ); // {geometries : [], materiallibs: []}
-  let materialOBJ = parseMLT(textMTL);
+  let materialOBJ = undefined;
+  // let materialOBJ = parseMLT(textMTL);
 
   // console.log("OBJ: \n", dataOBJ);
   // console.log(materialOBJ);
@@ -44,6 +45,7 @@ async function main() {
 
   // ------------ load chair object -----------------
   let [dataOBJ, _] = await loadOBJ();
+  console.log(dataOBJ);
 
   // create buffer info and material information for each geometry in geometries
   // parts = [element1, element2] where element = {bufferInfo, material}
@@ -72,15 +74,15 @@ async function main() {
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
 
-    computeSharedUniforms(gl, programInfo);
-
     // ----  use program -------
     gl.useProgram(programInfo.program);
+
+    computeSharedUniforms(gl, programInfo);
 
     // word matrix is theorically different for each object
     // in these case all geometries are related to the same object, so we compute it only once
     // are at the same space.
-    const u_world = m4.yRotation(time);
+    const u_world = m4.yRotation(1);
 
     for (let { bufferInfo, material } of parts) {
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer

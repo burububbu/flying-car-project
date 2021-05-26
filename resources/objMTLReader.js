@@ -1,13 +1,15 @@
+"use strict";
+
 const keywordRE = /(\w*)(?: )*(.*)/; // the same for obj and mtl
 
 function parseOBJ(text) {
   // fill the 0th value with 0. The system is 1 based.
-  let positionsOBJ = [[0, 0, 0]];
-  let texcoordsOBJ = [[0, 0]];
-  let normalsOBJ = [[0, 0, 0]];
+  let objPositions = [[0, 0, 0]];
+  let objTexcoords = [[0, 0]];
+  let objNormals = [[0, 0, 0]];
 
   // data obj-style
-  let objVertexData = [positionsOBJ, texcoordsOBJ, normalsOBJ];
+  const objVertexData = [objPositions, objTexcoords, objNormals];
 
   // data webgl-style
   let webglVertexData = [
@@ -29,7 +31,8 @@ function parseOBJ(text) {
 
   // define here function useful as keyword handlers
   function newGeometry() {
-    // If there is an existing geometry and it's not empty then start a new one.
+    // If there is an existing geometry and it's
+    // not empty then start a new one.
     if (geometry && geometry.data.position.length) {
       geometry = undefined;
     }
@@ -37,13 +40,11 @@ function parseOBJ(text) {
 
   // set geometry only if it's undefined
   function setGeometry() {
-    if (geometry === undefined) {
-      let position = [];
-      let texcoord = [];
-      let normal = [];
-
+    if (!geometry) {
+      const position = [];
+      const texcoord = [];
+      const normal = [];
       webglVertexData = [position, texcoord, normal];
-
       geometry = {
         object,
         groups,
@@ -62,8 +63,6 @@ function parseOBJ(text) {
   function addVertex(vert) {
     let elements = vert.split("/"); // ['1', '1', '1']
 
-    if (!elements) return;
-
     // loop over i: positions, normal and tex
     elements.forEach((element, i) => {
       if (!element) return;
@@ -77,9 +76,9 @@ function parseOBJ(text) {
   }
 
   let keywordsOBJ = {
-    v: (parts, _) => positionsOBJ.push(parts.map(parseFloat)),
-    vn: (parts, _) => normalsOBJ.push(parts.map(parseFloat)),
-    vt: (parts, _) => texcoordsOBJ.push(parts.map(parseFloat)),
+    v: (parts, _) => objPositions.push(parts.map(parseFloat)),
+    vn: (parts, _) => objNormals.push(parts.map(parseFloat)),
+    vt: (parts, _) => objTexcoords.push(parts.map(parseFloat)),
     f: (parts, _) => {
       // here parts is ['1\1\1\', '2\2\2']
       setGeometry();
@@ -133,6 +132,7 @@ function parseMLT() {}
 
 // to use for obj and mtl
 function _parse(line, keywords) {
+  line = line.trim();
   // line is empty or is a comment
   if (line === "" || line[0] === "#") {
     return;
