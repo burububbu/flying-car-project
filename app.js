@@ -3,8 +3,8 @@ import * as utils from "./resources/utils.js";
 
 // data useful for the computing of
 let setView = {
-  cameraTarget: [0, 0, 0],
-  cameraPosition: [0, 0, 50],
+  cameraTarget: [0, 5, 0],
+  cameraPosition: [0, 5, 10],
   zNear: 1,
   zFar: 4000,
   fieldOfView: 60,
@@ -12,8 +12,8 @@ let setView = {
 };
 
 async function loadOBJ() {
-  let path = "./obj/CyberpunkDeLorean/";
-  let objectName = "CyberpunkDeLorean";
+  let path = "./obj/chair/";
+  let objectName = "chairReal";
 
   let textOBJ = await utils.loadText(path + objectName + ".obj");
   // let textMTL = await utils.loadText(path + objectName + ".mtl");
@@ -82,7 +82,7 @@ async function main() {
     // word matrix is theorically different for each object
     // in these case all geometries are related to the same object, so we compute it only once
     // are at the same space.
-    const u_world = m4.yRotation(1);
+    const u_world = m4.yRotation(time);
 
     for (let { bufferInfo, material } of parts) {
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
