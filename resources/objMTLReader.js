@@ -137,11 +137,11 @@ function parseMTL(text) {
   let keywordsMTL = {
     newmtl: (_, unparsedArgs) => {
       material = {
-        diffuse: [1, 1, 1, 1],
-        ambient: [0, 0, 0],
-        specular: [1, 1, 1],
-        shininess: 400,
-        opacity: 1,
+        // diffuse: [1, 1, 1, 1],
+        // ambient: [0, 0, 0],
+        // specular: [1, 1, 1],
+        // shininess: 400,
+        // opacity: 1,
       }; // default value
       materials[unparsedArgs] = material;
     },
