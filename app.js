@@ -59,7 +59,7 @@ async function main() {
       normal: { numComponents: 3, data: data.normal },
     };
     let bufferInfo = webglUtils.createBufferInfoFromArrays(gl, arrays);
-
+    console.log(materialsOBJ[material]);
     return {
       material: materialsOBJ[material],
       bufferInfo,
@@ -84,9 +84,11 @@ async function main() {
     // are at the same space.
     const u_world = m4.yRotation(time);
 
-    for (const { bufferInfo, material } of parts) {
+    console.log(parts);
+    for (const { material, bufferInfo } of parts) {
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
       webglUtils.setBuffersAndAttributes(gl, programInfo, bufferInfo);
+      console.log(material);
       // calls gl.uniform
       let tempdiffuse = [...material.diffuse, 1];
       webglUtils.setUniforms(programInfo, {
