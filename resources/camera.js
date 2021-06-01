@@ -1,5 +1,8 @@
 import { degToRad } from "./utils.js";
 
+const rad360 = Math.PI * 2;
+const dr = degToRad(4); // if odd then change phi condition with newPhi + dr > 0 && newPhi <= Math.PI
+
 // class that represent the camera
 class Camera {
   constructor(D, theta, phi, up, target) {
@@ -26,30 +29,28 @@ class Camera {
   getCartesianCoord() {
     return [
       this.D * Math.sin(this.phi) * Math.cos(this.theta), //x
-      this.D * Math.cos(this.phi), // z
-      this.D * Math.sin(this.phi) * Math.sin(this.theta), //y
+      this.D * Math.cos(this.phi), // y (technically this is the z formula but in this project we have the y axis as vertical axis and not the z axis as at lesson)
+      this.D * Math.sin(this.phi) * Math.sin(this.theta), // z (technically this is the y formula)
     ];
   }
 
   // active listeners useful to handle the zoom and camera moving
   activeListeners(canvas) {
     let moveHandler = (event) => {
-      let dr = degToRad(4);
-
+      // mouse movement on y axis
       if (event.pageX !== this.lastPosition[0]) {
-        // x
-        event.pageX > this.lastPosition[0]
-          ? (this.theta = thetaModule(this.theta + dr))
-          : (this.theta = thetaModule(this.theta - dr));
+        event.pageX > this.lastPosition[0] // % (rad360) because theta have to be between 0 and 2PI (here i check only the latter condition)
+          ? (this.theta = this.theta + (dr % rad360))
+          : (this.theta = this.theta - (dr % rad360));
       }
+
+      // mouse movement on y axis
       if (event.pageY !== this.lastPosition[1]) {
-        // y
         event.pageY < this.lastPosition[1]
           ? (this.phi = phiCheck(this.phi, dr))
           : (this.phi = phiCheck(this.phi, -dr));
       }
 
-      // console.log(radToDeg(this.theta), radToDeg(this.phi));
       this.lastPosition = [event.pageX, event.pageY];
     };
 
@@ -57,8 +58,6 @@ class Camera {
     canvas.addEventListener("mousedown", (event) => {
       // update current mouse position
       this.lastPosition = [event.pageX, event.pageY];
-      let dr = (15.0 * Math.PI) / 180.0;
-      this.theta += dr;
 
       canvas.addEventListener("mousemove", moveHandler);
     });
@@ -83,11 +82,6 @@ function phiCheck(phi, dr) {
     return newPhi;
   } else return phi;
   // return phi >= 0 ? phi % Math.PI : Math.PI * 2;
-}
-
-// theta have to be 0 < theta < 2 pi
-function thetaModule(theta) {
-  return theta % (Math.PI * 2);
 }
 
 export { Camera };
