@@ -1,26 +1,39 @@
 import { parseOBJ, parseMTL } from "./resources/objMTLReader.js";
+import { Camera } from "./resources/camera.js";
 import * as utils from "./resources/utils.js";
 
-// data useful for the computing of
+// data useful for the computing of the view
 let setView = {
-  cameraTarget: [0, 50, 0],
-  cameraPosition: [0, 5, 100],
   zNear: 1,
   zFar: 4000,
   fieldOfView: 60,
-  up: [0, 1, 0], // view-up vector
 };
+
+let lightDirection = m4.normalize([-1, 3, 5]);
+
+// set theta and phi to 0 beacuse we are on z axis
+const camera = new Camera(
+  400, // D
+  utils.degToRad(0), // theta
+  utils.degToRad(0), // phi
+  [0, 1, 0], //up
+  [0, 50, 0] //d
+);
 
 async function loadOBJ() {
   let path = "./obj/among us/";
   let objectName = "among us";
 
   let textOBJ = await utils.loadText(path + objectName + ".obj");
-  let textMTL = await utils.loadText(path + objectName + ".mtl");
-
   let dataOBJ = parseOBJ(textOBJ); // {geometries : [], materiallibs: []}
 
-  let dataMTL = parseMTL(textMTL);
+  let textMTL = "";
+  // there could be different mtl files
+  for (let filename of dataOBJ.materialLibs) {
+    textMTL += "\n" + (await utils.loadText(path + filename));
+  }
+  let dataMTL = parseMTL(textMTL); // {geometries : [], materiallibs: []}
+
   return [dataOBJ, dataMTL];
 }
 
@@ -33,6 +46,8 @@ async function main() {
     return;
   }
 
+  camera.activeListeners(canvas);
+
   // ---------------- load shaders and create program ------------------
   let vSrc = await utils.loadText("./shaders/vertexShader.glsl");
   let fSrc = await utils.loadText("./shaders/fragmentShader.glsl");
@@ -40,7 +55,7 @@ async function main() {
   let programInfo = webglUtils.createProgramInfo(gl, [vSrc, fSrc]);
 
   // ------------ load object -----------------
-  let [obj, materials] = await loadOBJ();
+  let [obj, materials] = await loadOBJ(); //[dataOBJ, dataMTL]
 
   // create buffer info and material information for each geometry in geometries
   // parts = [element1, element2] where element = {bufferInfo, material}
@@ -67,7 +82,7 @@ async function main() {
 
     // compute the world matrix once since all parts
     // are at the same space.
-    let u_world = m4.yRotation(time);
+    let u_world = m4.yRotation(1);
     // u_world = m4.translate(u_world, ...objOffset);
 
     for (const { bufferInfo, material } of parts) {
@@ -91,23 +106,18 @@ async function main() {
 }
 
 function computeSharedUniforms(gl, programInfo) {
-  const projection = m4.perspective(
+  let projection = m4.perspective(
     utils.degToRad(setView.fieldOfView),
     gl.canvas.clientWidth / gl.canvas.clientHeight, //aspect
     setView.zNear,
     setView.zFar
   );
-  // Compute the camera's matrix using look at.
-  const camera = m4.lookAt(
-    setView.cameraPosition,
-    setView.cameraTarget,
-    setView.up
-  );
+
   // Make a view matrix from the camera matrix.
-  const view = m4.inverse(camera);
+  let view = m4.inverse(camera.getMatrix());
 
   const sharedUniforms = {
-    u_lightDirection: m4.normalize([-1, 3, 5]),
+    u_lightDirection: lightDirection,
     u_view: view,
     u_projection: projection,
   };
