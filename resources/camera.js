@@ -26,32 +26,31 @@ class Camera {
   getCartesianCoord() {
     return [
       this.D * Math.sin(this.phi) * Math.cos(this.theta), //x
-      this.D * Math.sin(this.phi) * Math.sin(this.theta), //y
       this.D * Math.cos(this.phi), // z
+      this.D * Math.sin(this.phi) * Math.sin(this.theta), //y
     ];
   }
 
   // active listeners useful to handle the zoom and camera moving
   activeListeners(canvas) {
     let moveHandler = (event) => {
-      let dr = degToRad(2);
+      let dr = degToRad(4);
 
       if (event.pageX !== this.lastPosition[0]) {
         // x
-        event.pageX < this.lastPosition[0]
-          ? (this.phi += dr)
-          : (this.phi -= dr);
+        event.pageX > this.lastPosition[0]
+          ? (this.theta = thetaModule(this.theta + dr))
+          : (this.theta = thetaModule(this.theta - dr));
       }
       if (event.pageY !== this.lastPosition[1]) {
-        // x
-        event.pageY > this.lastPosition[1]
-          ? (this.theta += dr)
-          : (this.theta -= dr);
+        // y
+        event.pageY < this.lastPosition[1]
+          ? (this.phi = phiCheck(this.phi, dr))
+          : (this.phi = phiCheck(this.phi, -dr));
       }
 
+      // console.log(radToDeg(this.theta), radToDeg(this.phi));
       this.lastPosition = [event.pageX, event.pageY];
-
-      console.log("ao");
     };
 
     // user hold down the mouse
@@ -74,6 +73,21 @@ class Camera {
       this.D += event.deltaY * -0.1;
     });
   }
+}
+
+// phi have to be  0 < phi < pi
+function phiCheck(phi, dr) {
+  let newPhi = phi + dr;
+
+  if (newPhi + dr >= 0 && newPhi <= Math.PI) {
+    return newPhi;
+  } else return phi;
+  // return phi >= 0 ? phi % Math.PI : Math.PI * 2;
+}
+
+// theta have to be 0 < theta < 2 pi
+function thetaModule(theta) {
+  return theta % (Math.PI * 2);
 }
 
 export { Camera };

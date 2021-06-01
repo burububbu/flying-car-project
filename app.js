@@ -14,8 +14,8 @@ let lightDirection = m4.normalize([-1, 3, 5]);
 // set theta and phi to 0 beacuse we are on z axis
 const camera = new Camera(
   400, // D
-  utils.degToRad(0), // theta
-  utils.degToRad(0), // phi
+  utils.degToRad(60), // theta
+  utils.degToRad(60), // phi
   [0, 1, 0], //up
   [0, 50, 0] //d
 );
