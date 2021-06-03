@@ -15,7 +15,7 @@ let lightDirection = m4.normalize([-1, 3, 5]);
 const camera = new Camera(
   400, // D
   utils.degToRad(60), // theta
-  utils.degToRad(60), // phi
+  utils.degToRad(90), // phi
   [0, 1, 0], //up
   [0, 50, 0] //d
 );
