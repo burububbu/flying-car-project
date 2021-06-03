@@ -169,6 +169,16 @@ function parseMTL(text) {
     illum: (parts, _) => {
       material.illum = parseInt(parts[0]);
     },
+    // images used for textures
+    map_Kd(_, unparsedArgs) {
+      material.diffuseMap = unparsedArgs;
+    },
+    map_Ns(_, unparsedArgs) {
+      material.specularMap = unparsedArgs;
+    },
+    map_Bump(_, unparsedArgs) {
+      material.normalMap = unparsedArgs;
+    },
   };
 
   let lines = text.split("\n");

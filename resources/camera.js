@@ -1,7 +1,7 @@
 import { degToRad } from "./utils.js";
 
 const rad360 = Math.PI * 2;
-const dr = degToRad(4); // if odd then change phi condition with newPhi + dr > 0 && newPhi <= Math.PI
+const dr = degToRad(2); // if odd then change phi condition with newPhi + dr > 0 && newPhi <= Math.PI
 
 // class that represent the camera
 class Camera {
@@ -69,7 +69,7 @@ class Camera {
 
     // zoom in zoom out
     canvas.addEventListener("wheel", (event) => {
-      this.D += event.deltaY * -0.1;
+      this.D += event.deltaY * -0.01;
     });
   }
 }
@@ -85,3 +85,14 @@ function phiCheck(phi, dr) {
 }
 
 export { Camera };
+
+// canvas.addEventListener("touchstart", (event) => {
+//   // update current mouse position
+//   this.lastPosition = [event.pageX, event.pageY];
+
+//   canvas.addEventListener("touchmove", moveHandler);
+// });
+
+// canvas.addEventListener("touchend", () =>
+//   canvas.removeEventListener("touchmove", moveHandler)
+// );

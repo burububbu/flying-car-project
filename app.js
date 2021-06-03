@@ -1,4 +1,10 @@
+"use strict";
+
 import { parseOBJ, parseMTL } from "./resources/objMTLReader.js";
+import {
+  create1PixelTexture,
+  createTexture,
+} from "./resources/customGlUtils.js";
 import { Camera } from "./resources/camera.js";
 import * as utils from "./resources/utils.js";
 
@@ -9,20 +15,20 @@ let setView = {
   fieldOfView: 60,
 };
 
+let path = "./obj/windmill/";
 let lightDirection = m4.normalize([-1, 3, 5]);
 
 // set theta and phi to 0 beacuse we are on z axis
 const camera = new Camera(
-  400, // D
-  utils.degToRad(60), // theta
+  15, // D
+  utils.degToRad(90), // theta
   utils.degToRad(90), // phi
   [0, 1, 0], //up
-  [0, 50, 0] //d
+  [0, 5, 0] // target
 );
 
 async function loadOBJ() {
-  let path = "./obj/among us/";
-  let objectName = "among us";
+  let objectName = "windmill";
 
   let textOBJ = await utils.loadText(path + objectName + ".obj");
   let dataOBJ = parseOBJ(textOBJ); // {geometries : [], materiallibs: []}
@@ -57,6 +63,38 @@ async function main() {
   // ------------ load object -----------------
   let [obj, materials] = await loadOBJ(); //[dataOBJ, dataMTL]
 
+  // load now all textures so if a  texture is used by more material than one, it can be riutilised
+  // it return a object with al lleast the "defaultWhite"
+
+  let textures = {
+    defaultWhite: create1PixelTexture(gl, [255, 255, 255, 255]),
+  };
+
+  for (const material of Object.values(materials)) {
+    Object.entries(material)
+      .filter(([key]) => key.endsWith("Map"))
+      .forEach(([key, filename]) => {
+        let texture = textures[filename];
+        if (!texture) {
+          const textureHref = path + filename;
+
+          texture = createTexture(gl, textureHref);
+          textures[filename] = texture;
+        }
+        material[key] = texture;
+      });
+  }
+
+  const defaultMaterial = {
+    diffuse: [1, 1, 1],
+    diffuseMap: textures.defaultWhite,
+    ambient: [0, 0, 0],
+    specular: [1, 1, 1],
+    shininess: 400,
+    opacity: 1,
+  };
+  // loadTextures(gl, materials, textures);
+
   // create buffer info and material information for each geometry in geometries
   // parts = [element1, element2] where element = {bufferInfo, material}
   const parts = obj.geometries.map(({ material, data }) => {
@@ -64,7 +102,10 @@ async function main() {
 
     const bufferInfo = webglUtils.createBufferInfoFromArrays(gl, data);
     return {
-      material: materials[material],
+      material: {
+        ...defaultMaterial,
+        ...materials[material],
+      },
       bufferInfo,
     };
   });
@@ -82,7 +123,7 @@ async function main() {
 
     // compute the world matrix once since all parts
     // are at the same space.
-    let u_world = m4.yRotation(1);
+    let u_world = m4.yRotation(time);
     // u_world = m4.translate(u_world, ...objOffset);
 
     for (const { bufferInfo, material } of parts) {
@@ -120,6 +161,7 @@ function computeSharedUniforms(gl, programInfo) {
     u_lightDirection: lightDirection,
     u_view: view,
     u_projection: projection,
+    u_viewWorldPosition: camera.getCartesianCoord(),
   };
 
   webglUtils.setUniforms(programInfo, sharedUniforms);
