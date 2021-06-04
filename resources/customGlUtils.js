@@ -33,15 +33,21 @@ function createTexture(gl, source) {
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
     //Flips the source data along its vertical axis
+    // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
     // Check if the image is a power of 2
     if (_isPowerOf2(image.width) && _isPowerOf2(image.height)) {
       // generate mipsmap
+
+      console.log("is a power of 2");
+
       gl.generateMipmap(gl.TEXTURE_2D);
     } else {
       // Turn off mips and set wrapping to clamp to edge.
+      console.log("not 2");
+
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
