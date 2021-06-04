@@ -17,11 +17,11 @@ let setView = {
 };
 
 let path = "./obj/CyberpunkDeLorean/";
-let lightDirection = m4.normalize([-1, 3, 5]);
+let lightPosition = [0, 80, 0];
 
 // set theta and phi to 0 beacuse we are on z axis
 const camera = new Camera(
-  15, // D
+  10, // D
   utils.degToRad(90), // theta
   utils.degToRad(90), // phi
   [0, 1, 0], //up
@@ -141,7 +141,7 @@ async function main() {
 
     // compute the world matrix once since all parts
     // are at the same space.
-    let u_world = m4.yRotation(1);
+    let u_world = m4.yRotation(time);
     // u_world = m4.translate(u_world, ...objOffset);
 
     for (const { bufferInfo, material } of parts) {
@@ -176,7 +176,7 @@ function computeSharedUniforms(gl, programInfo) {
   let view = m4.inverse(camera.getMatrix());
 
   const sharedUniforms = {
-    u_lightDirection: lightDirection,
+    u_lightPosition: lightPosition,
     u_view: view,
     u_projection: projection,
     u_viewWorldPosition: camera.getCartesianCoord(),

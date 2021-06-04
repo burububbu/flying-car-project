@@ -14,14 +14,22 @@ attribute vec4 a_position;
   varying vec3 v_surfaceToView;
   varying vec2 v_texcoord;
   varying vec4 v_color;
+  varying vec3 v_position;
 
   void main() {
+    // compute vertex position
     vec4 worldPosition = u_world * a_position;
     gl_Position = u_projection * u_view * worldPosition;
+    
+
+    // pass values to fragment shader
+    v_position = vec3(worldPosition) / worldPosition.w;
     v_surfaceToView = u_viewWorldPosition - worldPosition.xyz;
+    
     mat3 normalMat = mat3(u_world);
     v_normal = normalize(normalMat * a_normal);
     v_tangent = normalize(normalMat * a_tangent);
+    
     v_texcoord = a_texcoord;
     v_color = a_color;
   }
