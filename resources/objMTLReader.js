@@ -171,12 +171,15 @@ function parseMTL(text) {
     },
     // images used for textures
     map_Kd(_, unparsedArgs) {
+      // principal texture
       material.diffuseMap = unparsedArgs;
     },
     map_Ns(_, unparsedArgs) {
+      // specifies how shiny a particular surface part have to be. (or how much of the specular reflection is used)
       material.specularMap = unparsedArgs;
     },
     map_Bump(_, unparsedArgs) {
+      // bump map = normal map (used to create bump effects)
       material.normalMap = unparsedArgs;
     },
   };

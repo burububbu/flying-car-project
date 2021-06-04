@@ -4,6 +4,7 @@ import { parseOBJ, parseMTL } from "./resources/objMTLReader.js";
 import {
   create1PixelTexture,
   createTexture,
+  computeTangents,
 } from "./resources/customGlUtils.js";
 import { Camera } from "./resources/camera.js";
 import * as utils from "./resources/utils.js";
@@ -68,6 +69,7 @@ async function main() {
 
   let textures = {
     defaultWhite: create1PixelTexture(gl, [255, 255, 255, 255]),
+    defaultNormal: create1PixelTexture(gl, [127, 127, 255, 0]),
   };
 
   for (const material of Object.values(materials)) {
@@ -85,11 +87,19 @@ async function main() {
       });
   }
 
+  // modify the material so we can see the specular map
+  Object.values(materials).forEach((m) => {
+    m.shininess = 25;
+    m.specular = [3, 2, 1];
+  });
+
   const defaultMaterial = {
     diffuse: [1, 1, 1],
     diffuseMap: textures.defaultWhite,
+    normalMap: textures.defaultNormal,
     ambient: [0, 0, 0],
     specular: [1, 1, 1],
+    specularMap: textures.defaultWhite,
     shininess: 400,
     opacity: 1,
   };
@@ -99,6 +109,14 @@ async function main() {
   // parts = [element1, element2] where element = {bufferInfo, material}
   const parts = obj.geometries.map(({ material, data }) => {
     data.color = { value: [1, 1, 1, 1] }; // for now, fixed color
+
+    // generate tangents if whe have data to do this (surface normal + coor of the bump map texture)
+    if (data.texcoord && data.normal) {
+      data.tangent = computeTangents(data.position, data.texcoord);
+    } else {
+      // no tangent
+      data.tangent = [1, 0, 0];
+    }
 
     const bufferInfo = webglUtils.createBufferInfoFromArrays(gl, data);
     return {
