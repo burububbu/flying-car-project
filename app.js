@@ -16,7 +16,7 @@ let setView = {
   fieldOfView: 60,
 };
 
-let path = "./obj/windmill/";
+let path = "./obj/CyberpunkDeLorean/";
 let lightDirection = m4.normalize([-1, 3, 5]);
 
 // set theta and phi to 0 beacuse we are on z axis
@@ -25,11 +25,11 @@ const camera = new Camera(
   utils.degToRad(90), // theta
   utils.degToRad(90), // phi
   [0, 1, 0], //up
-  [0, 5, 0] // target
+  [0, 0, 0] // target
 );
 
 async function loadOBJ() {
-  let objectName = "windmill";
+  let objectName = "DeLorean";
 
   let textOBJ = await utils.loadText(path + objectName + ".obj");
   let dataOBJ = parseOBJ(textOBJ); // {geometries : [], materiallibs: []}
@@ -87,11 +87,11 @@ async function main() {
       });
   }
 
-  // modify the material so we can see the specular map
-  Object.values(materials).forEach((m) => {
-    m.shininess = 25;
-    m.specular = [3, 2, 1];
-  });
+  // // modify the material so we can see the specular map
+  // Object.values(materials).forEach((m) => {
+  //   m.shininess = 25;
+  //   m.specular = [3, 2, 1];
+  // });
 
   const defaultMaterial = {
     diffuse: [1, 1, 1],
@@ -141,7 +141,7 @@ async function main() {
 
     // compute the world matrix once since all parts
     // are at the same space.
-    let u_world = m4.yRotation(time);
+    let u_world = m4.yRotation(1);
     // u_world = m4.translate(u_world, ...objOffset);
 
     for (const { bufferInfo, material } of parts) {
