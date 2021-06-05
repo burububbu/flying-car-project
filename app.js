@@ -16,12 +16,12 @@ let setView = {
   fieldOfView: 60,
 };
 
-let path = "./obj/CyberpunkDeLorean/";
-let lightPosition = [0, 80, 0];
+let path = "./obj/Low_poly_UFO/";
+let lightPosition = [0, 50, 100];
 
 // set theta and phi to 0 beacuse we are on z axis
 const camera = new Camera(
-  10, // D
+  30, // D
   utils.degToRad(90), // theta
   utils.degToRad(90), // phi
   [0, 1, 0], //up
@@ -29,7 +29,7 @@ const camera = new Camera(
 );
 
 async function loadOBJ() {
-  let objectName = "DeLorean";
+  let objectName = "Low_poly_UFO";
 
   let textOBJ = await utils.loadText(path + objectName + ".obj");
   let dataOBJ = parseOBJ(textOBJ); // {geometries : [], materiallibs: []}
@@ -89,17 +89,18 @@ async function main() {
 
   // // modify the material so we can see the specular map
   // Object.values(materials).forEach((m) => {
-  //   m.shininess = 25;
-  //   m.specular = [3, 2, 1];
+  //   m.shininess = 0;
+  //   // m.specular = [3, 2, 1];
   // });
 
   const defaultMaterial = {
     diffuse: [1, 1, 1],
     diffuseMap: textures.defaultWhite,
     normalMap: textures.defaultNormal,
-    ambient: [0, 0, 0],
+    ambient: [1, 1, 1],
     specular: [1, 1, 1],
     specularMap: textures.defaultWhite,
+    emissiveMap: textures.defaultWhite,
     shininess: 400,
     opacity: 1,
   };
@@ -141,7 +142,7 @@ async function main() {
 
     // compute the world matrix once since all parts
     // are at the same space.
-    let u_world = m4.yRotation(time);
+    let u_world = m4.yRotation(1);
     // u_world = m4.translate(u_world, ...objOffset);
 
     for (const { bufferInfo, material } of parts) {

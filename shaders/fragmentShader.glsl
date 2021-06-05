@@ -3,6 +3,8 @@
 
 this is what we have to insert into the fragcolor
 
+add EMISSIVE COMPONENT -> k_e + Ile( light intensity ) + ...
+
 I = k_a * I_a +
     K_d * I_d * cos(theta) +
     k_s * I_s *(cos_alpha)^n
@@ -40,6 +42,7 @@ precision highp float;
   uniform sampler2D diffuseMap;
   uniform sampler2D normalMap;
   uniform sampler2D specularMap;
+  uniform sampler2D emissiveMap;
 
   // material data (to use according with the textures if available)
   uniform vec3 diffuse; // kd
@@ -56,6 +59,7 @@ precision highp float;
     // compute color from the specular and diffuse map
     vec4 diffuseMapColor = texture2D(diffuseMap, v_texcoord);
     vec4 specularMapColor = texture2D(specularMap, v_texcoord);
+    vec4 emissiveMapColor = texture2D(emissiveMap, v_texcoord);
 
     // compute the normal according to the normal texture
     vec3 normal = normalize(v_normal);
@@ -84,8 +88,12 @@ precision highp float;
       I_s = pow(specAngle, shininess);
     }
 
+    // emissive component
+    vec3 emissiveComponent = emissive * emissiveMapColor.rgb; 
+
     // phong equation
     gl_FragColor = vec4(
+      emissiveComponent +
       ambient * ambientColor +
       diffuse * lambertian * diffuseMapColor.rgb +
       specular * I_s * specularMapColor.rgb,

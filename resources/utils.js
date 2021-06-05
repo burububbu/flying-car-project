@@ -28,6 +28,8 @@ function getSphericalCoord(x, y, z) {
 // D -> distanza punto dall'origine
 // theta -> angolo tra
 // phi -> angolo tra Z e vettore che porta al punto (x,y,z)
+
+// maybe i haven't to use it
 function getCartesianCoord(D, theta, phi) {
   return {
     x: D * Math.sin(phi) * Math.cos(theta),
