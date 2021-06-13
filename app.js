@@ -1,13 +1,8 @@
 "use strict";
 
-import { parseOBJ, parseMTL } from "./resources/objMTLReader.js";
-import {
-  create1PixelTexture,
-  createTexture,
-  computeTangents,
-} from "./resources/customGlUtils.js";
 import { Camera } from "./resources/camera.js";
 import * as utils from "./resources/utils.js";
+import { Car } from "./resources/car.js";
 
 // data useful for the computing of the view
 let setView = {
@@ -16,44 +11,36 @@ let setView = {
   fieldOfView: 60,
 };
 
-let path = "./obj/Low_poly_UFO/";
-let lightPosition = [0, 50, 100];
+let path = "./obj/terrain/";
+// let filename = "Silver Retro Car";
+let lightPosition = [0, 200, 0];
 
-// set theta and phi to 0 beacuse we are on z axis
+// set theta and phi to 0 because we are on z axis
 const camera = new Camera(
-  30, // D
-  utils.degToRad(90), // theta
-  utils.degToRad(90), // phi
+  20, // D
+  0, // theta
+  1, // phi
   [0, 1, 0], //up
   [0, 0, 0] // target
 );
-
-async function loadOBJ() {
-  let objectName = "Low_poly_UFO";
-
-  let textOBJ = await utils.loadText(path + objectName + ".obj");
-  let dataOBJ = parseOBJ(textOBJ); // {geometries : [], materiallibs: []}
-
-  let textMTL = "";
-  // there could be different mtl files
-  for (let filename of dataOBJ.materialLibs) {
-    textMTL += "\n" + (await utils.loadText(path + filename));
-  }
-  let dataMTL = parseMTL(textMTL); // {geometries : [], materiallibs: []}
-
-  return [dataOBJ, dataMTL];
-}
 
 async function main() {
   // --------------- init --------------
   const canvas = document.getElementById("canvas");
   const gl = canvas.getContext("webgl");
+
   if (!gl) {
     console.log("WebGL is not available");
     return;
   }
 
   camera.activeListeners(canvas);
+
+  console.log(
+    `vendor: ${gl.getParameter(
+      gl.getExtension("WEBGL_debug_renderer_info").UNMASKED_RENDERER_WEBGL
+    )}`
+  );
 
   // ---------------- load shaders and create program ------------------
   let vSrc = await utils.loadText("./shaders/vertexShader.glsl");
@@ -62,72 +49,35 @@ async function main() {
   let programInfo = webglUtils.createProgramInfo(gl, [vSrc, fSrc]);
 
   // ------------ load object -----------------
-  let [obj, materials] = await loadOBJ(); //[dataOBJ, dataMTL]
+  // let [obj, materials] = await utils.loadOBJ(path, "terrain"); //[dataOBJ, dataMTL]
 
-  // load now all textures so if a  texture is used by more material than one, it can be riutilised
-  // it return a object with al lleast the "defaultWhite"
+  // const defaultTextures = {
+  //   defaultWhite: create1PixelTexture(gl, [255, 255, 255, 255]),
+  //   defaultNormal: create1PixelTexture(gl, [127, 127, 255, 0]),
+  // };
 
-  let textures = {
-    defaultWhite: create1PixelTexture(gl, [255, 255, 255, 255]),
-    defaultNormal: create1PixelTexture(gl, [127, 127, 255, 0]),
-  };
+  // const defaultMaterial = {
+  //   diffuse: [1, 1, 1],
+  //   diffuseMap: defaultTextures.defaultWhite,
+  //   normalMap: defaultTextures.defaultNormal,
+  //   ambient: [1, 1, 1],
+  //   specular: [1, 1, 1],
+  //   specularMap: defaultTextures.defaultWhite,
+  //   emissiveMap: defaultTextures.defaultWhite,
+  //   shininess: 400,
+  //   opacity: 1,
+  // };
 
-  for (const material of Object.values(materials)) {
-    Object.entries(material)
-      .filter(([key]) => key.endsWith("Map"))
-      .forEach(([key, filename]) => {
-        let texture = textures[filename];
-        if (!texture) {
-          const textureHref = path + filename;
+  // // load all textures so, if a texture is used by more material than one, it can be shared
+  // // it returns an object with at least the "defaultWhite" and "defaultNormal"
+  // loadTextures(gl, materials, path, defaultTextures);
 
-          texture = createTexture(gl, textureHref);
-          textures[filename] = texture;
-        }
-        material[key] = texture;
-      });
-  }
+  // // create buffer info and material information for each geometry in geometries
+  // const parts = getParts(gl, obj, materials, defaultMaterial);
 
-  // // modify the material so we can see the specular map
-  // Object.values(materials).forEach((m) => {
-  //   m.shininess = 0;
-  //   // m.specular = [3, 2, 1];
-  // });
-
-  const defaultMaterial = {
-    diffuse: [1, 1, 1],
-    diffuseMap: textures.defaultWhite,
-    normalMap: textures.defaultNormal,
-    ambient: [1, 1, 1],
-    specular: [1, 1, 1],
-    specularMap: textures.defaultWhite,
-    emissiveMap: textures.defaultWhite,
-    shininess: 400,
-    opacity: 1,
-  };
-  // loadTextures(gl, materials, textures);
-
-  // create buffer info and material information for each geometry in geometries
-  // parts = [element1, element2] where element = {bufferInfo, material}
-  const parts = obj.geometries.map(({ material, data }) => {
-    data.color = { value: [1, 1, 1, 1] }; // for now, fixed color
-
-    // generate tangents if whe have data to do this (surface normal + coor of the bump map texture)
-    if (data.texcoord && data.normal) {
-      data.tangent = computeTangents(data.position, data.texcoord);
-    } else {
-      // no tangent
-      data.tangent = [1, 0, 0];
-    }
-
-    const bufferInfo = webglUtils.createBufferInfoFromArrays(gl, data);
-    return {
-      material: {
-        ...defaultMaterial,
-        ...materials[material],
-      },
-      bufferInfo,
-    };
-  });
+  let car = new Car();
+  await car.loadObjects(gl, path, "terrain", "", "", programInfo);
+  let parts = car.getCarParts();
 
   function render(time) {
     time *= 0.001; // convert to seconds
@@ -142,10 +92,11 @@ async function main() {
 
     // compute the world matrix once since all parts
     // are at the same space.
-    let u_world = m4.yRotation(1);
+    let u_world = m4.translation(0, 0, 0);
+    // u_world = m4.xRotate(u_world, time);
     // u_world = m4.translate(u_world, ...objOffset);
 
-    for (const { bufferInfo, material } of parts) {
+    for (const { bufferInfo, material, uniforms } of parts) {
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
       webglUtils.setBuffersAndAttributes(gl, programInfo, bufferInfo);
       // calls gl.uniform
@@ -174,13 +125,16 @@ function computeSharedUniforms(gl, programInfo) {
   );
 
   // Make a view matrix from the camera matrix.
-  let view = m4.inverse(camera.getMatrix());
+  // let view = m4.inverse(camera.getMatrix());
+
+  let view = m4.inverse(m4.lookAt(camera.cartesianCoord, [0, 0, 0], [0, 1, 0]));
 
   const sharedUniforms = {
     u_lightPosition: lightPosition,
     u_view: view,
     u_projection: projection,
-    u_viewWorldPosition: camera.getCartesianCoord(),
+    // u_viewWorldPosition: camera.getCartesianCoord(),
+    u_viewWorldPosition: camera.cartesianCoord,
   };
 
   webglUtils.setUniforms(programInfo, sharedUniforms);

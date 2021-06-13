@@ -13,25 +13,34 @@ class Camera {
 
     // view up vector
     this.up = up;
-
     // target
     this.target = target;
 
+    this.cartesianCoord = [0, 0, 0];
+    this.updateCartesianCoord();
+
     // useful for camera moving
-    this.lastPosition = undefined;
+    this.lastPosition = [0, 0, 0];
   }
 
   // get camera matrix
   getMatrix() {
-    return m4.lookAt(this.getCartesianCoord(), this.target, this.up);
+    return m4.lookAt(this.cartesianCoord, this.target, this.up);
   }
 
-  getCartesianCoord() {
-    return [
-      this.D * Math.sin(this.phi) * Math.cos(this.theta), //x
-      this.D * Math.cos(this.phi), // y (technically this is the z formula but in this project we have the y axis as vertical axis and not the z axis as at lesson)
-      this.D * Math.sin(this.phi) * Math.sin(this.theta), // z (technically this is the y formula)
-    ];
+  updateCartesianCoord() {
+    // x = old y
+    // y = old z
+    // z = old x
+
+    this.cartesianCoord[0] = this.D * Math.sin(this.phi) * Math.sin(this.theta); // x (old y)
+    this.cartesianCoord[1] = this.D * Math.cos(this.phi); // y (old z)
+    this.cartesianCoord[2] = this.D * Math.sin(this.phi) * Math.cos(this.theta); // z (old x)
+
+    // old version
+    // this.cartesianCoord[0] = this.D * Math.sin(this.phi) * Math.cos(this.theta); // x
+    // this.cartesianCoord[1] = this.D * Math.sin(this.phi) * Math.sin(this.theta); // y
+    // this.cartesianCoord[2] = this.D * Math.cos(this.phi); // z
   }
 
   // active listeners useful to handle the zoom and camera moving
@@ -50,7 +59,7 @@ class Camera {
           ? (this.phi = phiCheck(this.phi, dr))
           : (this.phi = phiCheck(this.phi, -dr));
       }
-
+      this.updateCartesianCoord();
       this.lastPosition = [event.pageX, event.pageY];
     };
 
@@ -58,7 +67,6 @@ class Camera {
     canvas.addEventListener("mousedown", (event) => {
       // update current mouse position
       this.lastPosition = [event.pageX, event.pageY];
-
       canvas.addEventListener("mousemove", moveHandler);
     });
 
@@ -69,7 +77,8 @@ class Camera {
 
     // zoom in zoom out
     canvas.addEventListener("wheel", (event) => {
-      this.D += event.deltaY * -0.01;
+      if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.01; // in this way
+      this.updateCartesianCoord();
     });
   }
 }
@@ -78,10 +87,10 @@ class Camera {
 function phiCheck(phi, dr) {
   let newPhi = phi + dr;
 
-  if (newPhi + dr >= 0 && newPhi <= Math.PI) {
+  // maybe reset to if (newPhi + dr >= 0 && newPhi <= Math.PI)
+  if (newPhi + dr >= 0 && newPhi <= Math.PI / 2) {
     return newPhi;
   } else return phi;
-  // return phi >= 0 ? phi % Math.PI : Math.PI * 2;
 }
 
 export { Camera };

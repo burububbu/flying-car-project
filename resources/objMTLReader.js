@@ -136,17 +136,11 @@ function parseMTL(text) {
 
   let keywordsMTL = {
     newmtl: (_, unparsedArgs) => {
-      material = {
-        // diffuse: [1, 1, 1, 1],
-        // ambient: [0, 0, 0],
-        // specular: [1, 1, 1],
-        // shininess: 400,
-        // opacity: 1,
-      }; // default value
+      material = {};
       materials[unparsedArgs] = material;
     },
     Ns: (parts, _) => {
-      material.shininess = parseFloat(parts[0]);
+      material.shininess = parseFloat(400);
     },
     Ka: (parts, _) => {
       material.ambient = parts.map(parseFloat);
@@ -181,6 +175,15 @@ function parseMTL(text) {
     map_Bump(_, unparsedArgs) {
       // bump map = normal map (used to create bump effects)
       material.normalMap = unparsedArgs;
+    },
+    map_Ke(_, unparsedArgs) {
+      // glow texture
+      material.emissiveMap = unparsedArgs;
+    },
+
+    map_d(_, unparsedArgs) {
+      // opacity texture
+      material.opacityMap = unparsedArgs;
     },
   };
 
