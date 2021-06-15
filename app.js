@@ -19,7 +19,7 @@ let lightPosition = [0, 200, 0];
 const camera = new Camera(
   20, // D
   0, // theta
-  1, // phi
+  20.4, // phi
   [0, 1, 0], //up
   [0, 0, 0] // target
 );
@@ -76,7 +76,7 @@ async function main() {
   // const parts = getParts(gl, obj, materials, defaultMaterial);
 
   let car = new Car();
-  await car.loadObjects(gl, path, "terrain", "", "", programInfo);
+  await car.loadObjects(gl, path, "terrain", "DeLorean", "", programInfo);
   let parts = car.getCarParts();
 
   function render(time) {
