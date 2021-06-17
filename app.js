@@ -1,28 +1,21 @@
 "use strict";
 
-import { Camera } from "./resources/camera.js";
 import * as utils from "./resources/utils.js";
-import { Car } from "./resources/car.js";
+
+import { Scene } from "./resources/scene.js";
 
 // data useful for the computing of the view
-let setView = {
-  zNear: 1,
-  zFar: 4000,
-  fieldOfView: 60,
-};
 
-let path = "./obj/terrain/";
-// let filename = "Silver Retro Car";
-let lightPosition = [0, 200, 0];
+let lightPosition = [0, 50, 0];
 
 // set theta and phi to 0 because we are on z axis
-const camera = new Camera(
-  20, // D
-  utils.degToRad(0), // theta with theta = 0 and phi = 90°, we're on z axis
-  utils.degToRad(60), // phi
-  [0, 1, 0], //up
-  [0, 0, 0] // target
-);
+let cameraSettings = {
+  D: 20, // D
+  theta: utils.degToRad(0), // theta with theta = 0 and phi = 90°, we're on z axis
+  phi: utils.degToRad(60), // phi
+  up: [0, 1, 0], //up
+  target: [0, 0, 0], // target
+};
 
 async function main() {
   // --------------- init --------------
@@ -33,8 +26,6 @@ async function main() {
     console.log("WebGL is not available");
     return;
   }
-
-  camera.activeListeners(canvas);
 
   console.log(
     `vendor: ${gl.getParameter(
@@ -48,69 +39,17 @@ async function main() {
 
   let programInfo = webglUtils.createProgramInfo(gl, [vSrc, fSrc]);
 
-  let car = new Car();
-  await car.loadObjects(gl, path, "terrain", "", "", programInfo);
-  let parts = car.getCarParts();
-
-  function render(time) {
-    time *= 0.001; // convert to seconds
-
-    webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.enable(gl.DEPTH_TEST);
-
-    gl.useProgram(programInfo.program);
-
-    computeSharedUniforms(gl, programInfo);
-
-    // compute the world matrix once since all parts
-    // are at the same space.
-    let u_world = m4.translation(0, 0, 0);
-    // u_world = m4.xRotate(u_world, time);
-    // u_world = m4.translate(u_world, ...objOffset);
-
-    for (const { bufferInfo, material, uniforms } of parts) {
-      // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
-      webglUtils.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-      // calls gl.uniform
-      webglUtils.setUniforms(
-        programInfo,
-        {
-          u_world,
-        },
-        material
-      );
-      // calls gl.drawArrays or gl.drawElements
-      webglUtils.drawBufferInfo(gl, bufferInfo);
-    }
-
-    requestAnimationFrame(render);
-  }
-  requestAnimationFrame(render);
-}
-
-function computeSharedUniforms(gl, programInfo) {
-  let projection = m4.perspective(
-    utils.degToRad(setView.fieldOfView),
-    gl.canvas.clientWidth / gl.canvas.clientHeight, //aspect
-    setView.zNear,
-    setView.zFar
+  // create scene
+  let scene = new Scene(gl, programInfo, lightPosition, cameraSettings, canvas);
+  await scene.loadScene(
+    "../obj/", // path
+    "terrain", // ground
+    "", // background
+    ["CyberpunkDeLorean", "frontWheels", "backWheels"], // car
+    "" // object
   );
 
-  // Make a view matrix from the camera matrix.
-  // let view = m4.inverse(camera.getMatrix());
-
-  let view = m4.inverse(m4.lookAt(camera.cartesianCoord, [0, 0, 0], [0, 1, 0]));
-
-  const sharedUniforms = {
-    u_lightPosition: lightPosition,
-    u_view: view,
-    u_projection: projection,
-    // u_viewWorldPosition: camera.getCartesianCoord(),
-    u_viewWorldPosition: camera.cartesianCoord,
-  };
-
-  webglUtils.setUniforms(programInfo, sharedUniforms);
+  scene.render();
 }
 
 main();

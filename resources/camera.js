@@ -55,6 +55,7 @@ class Camera {
           : (this.phi = phiCheck(this.phi, -dr));
       }
       this.updateCartesianCoord();
+
       this.lastPosition = [event.pageX, event.pageY];
     };
 
