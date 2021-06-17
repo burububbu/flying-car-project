@@ -18,8 +18,8 @@ let lightPosition = [0, 200, 0];
 // set theta and phi to 0 because we are on z axis
 const camera = new Camera(
   20, // D
-  0, // theta
-  1, // phi
+  utils.degToRad(0), // theta with theta = 0 and phi = 90°, we're on z axis
+  utils.degToRad(60), // phi
   [0, 1, 0], //up
   [0, 0, 0] // target
 );
@@ -47,33 +47,6 @@ async function main() {
   let fSrc = await utils.loadText("./shaders/fragmentShader.glsl");
 
   let programInfo = webglUtils.createProgramInfo(gl, [vSrc, fSrc]);
-
-  // ------------ load object -----------------
-  // let [obj, materials] = await utils.loadOBJ(path, "terrain"); //[dataOBJ, dataMTL]
-
-  // const defaultTextures = {
-  //   defaultWhite: create1PixelTexture(gl, [255, 255, 255, 255]),
-  //   defaultNormal: create1PixelTexture(gl, [127, 127, 255, 0]),
-  // };
-
-  // const defaultMaterial = {
-  //   diffuse: [1, 1, 1],
-  //   diffuseMap: defaultTextures.defaultWhite,
-  //   normalMap: defaultTextures.defaultNormal,
-  //   ambient: [1, 1, 1],
-  //   specular: [1, 1, 1],
-  //   specularMap: defaultTextures.defaultWhite,
-  //   emissiveMap: defaultTextures.defaultWhite,
-  //   shininess: 400,
-  //   opacity: 1,
-  // };
-
-  // // load all textures so, if a texture is used by more material than one, it can be shared
-  // // it returns an object with at least the "defaultWhite" and "defaultNormal"
-  // loadTextures(gl, materials, path, defaultTextures);
-
-  // // create buffer info and material information for each geometry in geometries
-  // const parts = getParts(gl, obj, materials, defaultMaterial);
 
   let car = new Car();
   await car.loadObjects(gl, path, "terrain", "", "", programInfo);

@@ -36,11 +36,6 @@ class Camera {
     this.cartesianCoord[0] = this.D * Math.sin(this.phi) * Math.sin(this.theta); // x (old y)
     this.cartesianCoord[1] = this.D * Math.cos(this.phi); // y (old z)
     this.cartesianCoord[2] = this.D * Math.sin(this.phi) * Math.cos(this.theta); // z (old x)
-
-    // old version
-    // this.cartesianCoord[0] = this.D * Math.sin(this.phi) * Math.cos(this.theta); // x
-    // this.cartesianCoord[1] = this.D * Math.sin(this.phi) * Math.sin(this.theta); // y
-    // this.cartesianCoord[2] = this.D * Math.cos(this.phi); // z
   }
 
   // active listeners useful to handle the zoom and camera moving
