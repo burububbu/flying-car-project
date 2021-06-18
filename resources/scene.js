@@ -91,8 +91,6 @@ class Scene {
       ...this.background,
       ...this.car.getCarParts(),
     ]) {
-      console.log(parts);
-      console.log(uniforms);
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
       webglUtils.setBuffersAndAttributes(
         this.gl,
@@ -104,19 +102,6 @@ class Scene {
       // calls gl.drawArrays or gl.drawElements
       webglUtils.drawBufferInfo(this.gl, parts.bufferInfo);
     }
-
-    // for (const { bufferInfo, material, uniforms } of [
-    //   ...this.ground,
-    //   ...this.background,
-    //   ...this.car.getCarParts(),
-    // ]) {
-    //   // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
-    //   webglUtils.setBuffersAndAttributes(this.gl, this.programInfo, bufferInfo);
-    //   // calls gl.uniform
-    //   webglUtils.setUniforms(this.programInfo, uniforms, material);
-    //   // calls gl.drawArrays or gl.drawElements
-    //   webglUtils.drawBufferInfo(this.gl, bufferInfo);
-    // }
 
     requestAnimationFrame(this.render.bind(this));
   }

@@ -74,7 +74,6 @@ class Car {
     minMax.min.forEach((mi, idx) => {
       this.center[idx] = (minMax.max[idx] + mi) / 2;
     });
-    console.log(this.center);
   }
 
   async _loadParts(gl, path, filename, getCenter) {
