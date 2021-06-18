@@ -40,10 +40,8 @@ class Scene {
   ) {
     // personal uniforms -> u_world = identity()
     this.ground = await this._loadParts(path, groundFile);
-    this.ground.uniforms = {};
 
     this.background = await this._loadParts(path, backgroundFile);
-    this.background.uniforms = {};
 
     this.car = new Car();
     await this.car.loadObjects(
@@ -54,6 +52,8 @@ class Scene {
       carFiles[2],
       this.programInfo
     );
+
+    this.car.activeListeners();
 
     this.camera.target = this.car.center;
 
@@ -84,31 +84,39 @@ class Scene {
 
     this.gl.useProgram(this.programInfo.program); // TO SET
 
-    let u_world = m4.identity();
-
     this.computeAndSetSharedUniforms(this.gl, this.programInfo);
 
-    // this.camera.target(car.center);
-
-    for (const { bufferInfo, material, uniforms } of [
+    for (let { parts, uniforms } of [
       ...this.ground,
       ...this.background,
       ...this.car.getCarParts(),
     ]) {
+      console.log(parts);
+      console.log(uniforms);
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
-      webglUtils.setBuffersAndAttributes(this.gl, this.programInfo, bufferInfo);
-      // calls gl.uniform
-      webglUtils.setUniforms(
+      webglUtils.setBuffersAndAttributes(
+        this.gl,
         this.programInfo,
-        {
-          // sostituire with uniforms
-          u_world,
-        },
-        material
+        parts.bufferInfo
       );
+      // calls gl.uniform
+      webglUtils.setUniforms(this.programInfo, uniforms, parts.material);
       // calls gl.drawArrays or gl.drawElements
-      webglUtils.drawBufferInfo(this.gl, bufferInfo);
+      webglUtils.drawBufferInfo(this.gl, parts.bufferInfo);
     }
+
+    // for (const { bufferInfo, material, uniforms } of [
+    //   ...this.ground,
+    //   ...this.background,
+    //   ...this.car.getCarParts(),
+    // ]) {
+    //   // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
+    //   webglUtils.setBuffersAndAttributes(this.gl, this.programInfo, bufferInfo);
+    //   // calls gl.uniform
+    //   webglUtils.setUniforms(this.programInfo, uniforms, material);
+    //   // calls gl.drawArrays or gl.drawElements
+    //   webglUtils.drawBufferInfo(this.gl, bufferInfo);
+    // }
 
     requestAnimationFrame(this.render.bind(this));
   }

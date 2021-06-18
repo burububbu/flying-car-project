@@ -38,10 +38,12 @@ class Car {
     this.frontWheels = await this._loadParts(gl, path, frontWFilename, false);
     this.backWheels = await this._loadParts(gl, path, backWFilename, false);
 
-    // set programInfo
-    this.body.programInfo = programInfo;
-    this.frontWheels.programInfo = programInfo;
-    this.backWheels.programInfo = programInfo;
+    // set programInfo (scene use a default one)
+    // this.body.programInfo = programInfo;
+    // this.frontWheels.programInfo = programInfo;
+    // this.backWheels.programInfo = programInfo;
+
+    // this.bodyuniforms.u_world = m4.translation(6, 0, 0);
 
     // create a relation by parts
 
@@ -62,11 +64,8 @@ class Car {
   }
 
   getCarParts() {
-    return [
-      ...this.frontWheels.parts,
-      ...this.body.parts,
-      ...this.backWheels.parts,
-    ];
+    //[{parts:, uniform:}, {parts:, uniform:}, {parts:, uniform:}]
+    return [...this.frontWheels, ...this.body, ...this.backWheels];
   }
 
   // compute only the first time, then we applied to it the transformations (???)
@@ -84,9 +83,40 @@ class Car {
 
     loadTextures(gl, materials, path, this.defaultTextures);
 
-    return {
-      parts: getParts(gl, obj, materials, this.defaultMaterial),
-    };
+    return getParts(gl, obj, materials, this.defaultMaterial);
+  }
+
+  /*
+  up
+  down
+  left
+  right
+  */
+
+  activeListeners() {
+    window.addEventListener("keydown", (e) => {
+      if (e.repeat) {
+        switch (e.key) {
+          // w = - on z azis
+          // s = + in z axis
+          case "w":
+            console.log("hello this is w");
+
+            break;
+          case "a":
+            console.log("hello this is a");
+            break;
+          case "s":
+            console.log("hello this is s");
+            break;
+          case "d":
+            console.log("hello this is d");
+            break;
+          default:
+            break;
+        }
+      }
+    });
   }
 
   _setDefault(gl) {

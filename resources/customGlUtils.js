@@ -172,11 +172,14 @@ export function getParts(gl, obj, materials, defaultMaterial) {
     let bufferInfo = webglUtils.createBufferInfoFromArrays(gl, data);
 
     return {
-      material: {
-        ...defaultMaterial,
-        ...materials[material],
+      parts: {
+        material: {
+          ...defaultMaterial,
+          ...materials[material],
+        },
+        bufferInfo: bufferInfo,
       },
-      bufferInfo: bufferInfo,
+      uniforms: { u_world: m4.identity() },
     };
   });
 }
