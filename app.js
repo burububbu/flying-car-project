@@ -11,7 +11,7 @@ let lightPosition = [0, 50, 0];
 // set theta and phi to 0 because we are on z axis
 let cameraSettings = {
   D: 20, // D
-  theta: utils.degToRad(0), // theta with theta = 0 and phi = 90°, we're on z axis
+  theta: utils.degToRad(180), // theta with theta = 0 and phi = 90°, we're on z axis
   phi: utils.degToRad(60), // phi
   up: [0, 1, 0], //up
   target: [0, 0, 0], // target

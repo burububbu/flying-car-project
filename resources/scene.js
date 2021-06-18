@@ -66,7 +66,6 @@ class Scene {
       realpath, // es: obj/terrain/
       filename // terrain.obj
     );
-
     loadTextures(this.gl, materials, realpath, this.defaultTextures);
 
     return getParts(this.gl, obj, materials, this.defaultMaterial);
