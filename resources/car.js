@@ -19,6 +19,8 @@ class Car {
     this.body = {};
     this.frontWheels = {};
     this.backWheels = {};
+
+    this.center = [];
   }
 
   async loadObjects(
@@ -67,9 +69,19 @@ class Car {
     ];
   }
 
+  // compute only the first time, then we applied to it the transformations (???)
+  getCarCenter(obj) {
+    let x = []; // min, max
+    let y = []; // min, max
+    let z = []; // min, max
+
+    // computed only on the body
+    console.log(obj);
+  }
+
   async _loadParts(gl, path, filename) {
     let [obj, materials] = await utils.loadOBJ(path, filename);
-
+    this.getCarCenter(obj);
     loadTextures(gl, materials, path, this.defaultTextures);
 
     return {
@@ -139,4 +151,31 @@ class Node {
       child.updateWorldMatrix(worldMatrix);
     });
   }
+}
+function getExtents(positions) {
+  let min = positions.slice(0, 3);
+  let max = positions.slice(0, 3);
+
+  for (let i = 3; i < positions.length; i += 3) {
+    for (let j = 0; j < 3; j++) {
+      let temp = positions[i + j];
+      min[j] = Math.min(min[j], temp);
+      max[j] = Math.max(max[j], temp);
+    }
+  }
+  return { min, max };
+}
+
+function getGeometriesExtents(geometries) {
+  let min = Array(3).fill(Number.POSITIVE_INFINITY);
+  let max = Array(3).fill(Number.NEGATIVE_INFINITY);
+
+  geometries.forEach((geometry) => {
+    let minMax = getExtents(geometry.data.position);
+
+    min = min.map((mi, idx) => Math.min(mi, minMax.min[idx]));
+    max = max.map((ma, idx) => Math.max(ma, minMax.max[idx]));
+  });
+
+  return { min, max };
 }

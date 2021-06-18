@@ -17,6 +17,7 @@ function radToDeg(rad) {
 
 async function loadOBJ(path, name) {
   let textOBJ = await loadText(path + name + ".obj");
+
   let dataOBJ = parseOBJ(textOBJ); // {geometries : [], materiallibs: []}
 
   let textMTL = "";
