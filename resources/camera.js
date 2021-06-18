@@ -13,6 +13,7 @@ class Camera {
 
     // view up vector
     this.up = up;
+
     // target
     this.target = target;
 
@@ -73,7 +74,7 @@ class Camera {
 
     // zoom in zoom out
     canvas.addEventListener("wheel", (event) => {
-      if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.01; // in this way
+      if (this.D > 10 || event.deltaY < 0) this.D += event.deltaY * -0.01; // in this way
       this.updateCartesianCoord();
     });
   }
@@ -84,7 +85,7 @@ function phiCheck(phi, dr) {
   let newPhi = phi + dr;
 
   // maybe reset to if (newPhi + dr >= 0 && newPhi <= Math.PI)
-  if (newPhi + dr >= 0 && newPhi <= Math.PI / 2) {
+  if (newPhi + dr >= degToRad(30) && newPhi <= Math.PI / 2 - degToRad(3)) {
     return newPhi;
   } else return phi;
 }

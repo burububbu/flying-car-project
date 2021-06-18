@@ -20,7 +20,7 @@ class Car {
     this.frontWheels = {};
     this.backWheels = {};
 
-    this.center = [];
+    this.center = [0, 0, 0];
   }
 
   async loadObjects(
@@ -34,9 +34,9 @@ class Car {
     this._setDefault(gl);
 
     // parts = [{bufferinfo, material}, {bufferinfo, material}, {bufferinfo, material} ]
-    this.body = await this._loadParts(gl, path, bodyFilename);
-    this.frontWheels = await this._loadParts(gl, path, frontWFilename);
-    this.backWheels = await this._loadParts(gl, path, backWFilename);
+    this.body = await this._loadParts(gl, path, bodyFilename, true);
+    this.frontWheels = await this._loadParts(gl, path, frontWFilename, false);
+    this.backWheels = await this._loadParts(gl, path, backWFilename, false);
 
     // set programInfo
     this.body.programInfo = programInfo;
@@ -71,17 +71,17 @@ class Car {
 
   // compute only the first time, then we applied to it the transformations (???)
   getCarCenter(obj) {
-    let x = []; // min, max
-    let y = []; // min, max
-    let z = []; // min, max
-
-    // computed only on the body
-    console.log(obj);
+    let minMax = getGeometriesExtents(obj.geometries);
+    minMax.min.forEach((mi, idx) => {
+      this.center[idx] = (minMax.max[idx] + mi) / 2;
+    });
+    console.log(this.center);
   }
 
-  async _loadParts(gl, path, filename) {
+  async _loadParts(gl, path, filename, getCenter) {
     let [obj, materials] = await utils.loadOBJ(path, filename);
-    this.getCarCenter(obj);
+    if (getCenter) this.getCarCenter(obj);
+
     loadTextures(gl, materials, path, this.defaultTextures);
 
     return {

@@ -42,7 +42,7 @@ async function main() {
   // create scene
   let scene = new Scene(gl, programInfo, lightPosition, cameraSettings, canvas);
   await scene.loadScene(
-    "../obj/", // path
+    "./obj/", // path
     "terrain", // ground
     "", // background
     ["CyberpunkDeLorean", "frontWheels", "backWheels"], // car

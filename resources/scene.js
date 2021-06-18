@@ -55,6 +55,8 @@ class Scene {
       this.programInfo
     );
 
+    this.camera.target = this.car.center;
+
     //TODO cubeFile
   }
 
@@ -82,9 +84,11 @@ class Scene {
 
     this.gl.useProgram(this.programInfo.program); // TO SET
 
+    let u_world = m4.identity();
+
     this.computeAndSetSharedUniforms(this.gl, this.programInfo);
 
-    let u_world = m4.identity();
+    // this.camera.target(car.center);
 
     for (const { bufferInfo, material, uniforms } of [
       ...this.ground,
@@ -118,11 +122,11 @@ class Scene {
     );
 
     // Make a view matrix from the camera matrix.
-    // let view = m4.inverse(camera.getMatrix());
+    let view = m4.inverse(this.camera.getMatrix());
 
-    let view = m4.inverse(
-      m4.lookAt(this.camera.cartesianCoord, [0, 0, 0], [0, 1, 0])
-    );
+    // let view = m4.inverse(
+    //   m4.lookAt(this.camera.cartesianCoord, [0, 0, 0], [0, 1, 0])
+    // );
 
     const sharedUniforms = {
       u_lightPosition: this.lightPosition,
