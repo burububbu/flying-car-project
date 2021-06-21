@@ -15,8 +15,6 @@ name         index
 "RFrontWheel", 1
 "LBackWheel",  2
 "RBackWheel",  3
-
-
 */
 
 import {
@@ -28,9 +26,11 @@ import * as utils from "./utils.js";
 
 class Car {
   async load(gl, path, filename, programInfo) {
+    this._setDefault(gl);
+
     this.center = [0, 0, 0];
 
-    this._setDefault(gl);
+    this.keys = [false, false, false, false];
 
     this.carSections = await this._loadParts(gl, path, filename);
   }
@@ -80,27 +80,13 @@ class Car {
 
   activeListeners() {
     window.addEventListener("keydown", (e) => {
-      if (e.repeat) {
-        switch (e.key) {
-          // w = - on z azis
-          // s = + in z axis
-          case "w":
-            console.log("hello this is w");
+      let ind = ["w", "s", "a", "d"].indexOf(e.key);
+      if (ind > -1) this.keys[ind] = true;
+    });
 
-            break;
-          case "a":
-            console.log("hello this is a");
-            break;
-          case "s":
-            console.log("hello this is s");
-            break;
-          case "d":
-            console.log("hello this is d");
-            break;
-          default:
-            break;
-        }
-      }
+    window.addEventListener("keyup", (e) => {
+      let ind = ["w", "s", "a", "d"].indexOf(e.key);
+      if (ind > -1) this.keys[ind] = false;
     });
   }
 
@@ -167,6 +153,7 @@ class Node {
     });
   }
 }
+
 function getExtents(positions) {
   let min = positions.slice(0, 3);
   let max = positions.slice(0, 3);
