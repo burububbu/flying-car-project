@@ -35,21 +35,18 @@ class Scene {
     path, // ./obj/
     groundFile, // terrain -> terrain/terrain.obj
     backgroundFile,
-    carFiles, // [vehicle, front wheels, back wheels]
+    carFile, // [vehicle, front wheels, back wheels]
     cubeFile
   ) {
     // personal uniforms -> u_world = identity()
     this.ground = await this._loadParts(path, groundFile);
-
     this.background = await this._loadParts(path, backgroundFile);
 
     this.car = new Car();
-    await this.car.loadObjects(
+    await this.car.load(
       this.gl,
-      path + carFiles[0] + "/",
-      carFiles[0],
-      carFiles[1],
-      carFiles[2],
+      path + carFile + "/",
+      carFile,
       this.programInfo
     );
 
@@ -89,7 +86,7 @@ class Scene {
     for (let { parts, uniforms } of [
       ...this.ground,
       ...this.background,
-      ...this.car.getCarParts(),
+      ...this.car.getCarParts().flat(),
     ]) {
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
       webglUtils.setBuffersAndAttributes(

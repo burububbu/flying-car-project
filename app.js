@@ -45,7 +45,7 @@ async function main() {
     "./obj/", // path
     "terrain", // ground
     "", // background
-    ["CyberpunkDeLorean", "frontWheels", "backWheels"], // car
+    "DeLorean", // car
     "" // object
   );
 

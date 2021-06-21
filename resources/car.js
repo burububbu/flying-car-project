@@ -6,6 +6,19 @@ graph scene:
 
 */
 
+/*
+
+ORDER
+name         index
+"MainBody",
+"LFrontWheel", 0
+"RFrontWheel", 1
+"LBackWheel",  2
+"RBackWheel",  3
+
+
+*/
+
 import {
   create1PixelTexture,
   getParts,
@@ -14,83 +27,56 @@ import {
 import * as utils from "./utils.js";
 
 class Car {
-  // default constructor for now
-  constructor() {
-    this.body = {};
-    this.frontWheels = {};
-    this.backWheels = {};
-
+  async load(gl, path, filename, programInfo) {
     this.center = [0, 0, 0];
-  }
 
-  async loadObjects(
-    gl,
-    path,
-    bodyFilename,
-    frontWFilename,
-    backWFilename,
-    programInfo
-  ) {
     this._setDefault(gl);
 
-    // parts = [{bufferinfo, material}, {bufferinfo, material}, {bufferinfo, material} ]
-    this.body = await this._loadParts(gl, path, bodyFilename, true);
-    this.frontWheels = await this._loadParts(gl, path, frontWFilename, false);
-    this.backWheels = await this._loadParts(gl, path, backWFilename, false);
-
-    // set programInfo (scene use a default one)
-    // this.body.programInfo = programInfo;
-    // this.frontWheels.programInfo = programInfo;
-    // this.backWheels.programInfo = programInfo;
-
-    // this.bodyuniforms.u_world = m4.translation(6, 0, 0);
-
-    // create a relation by parts
-
-    // to add uniforms and
-    //     earthNode.drawInfo = {
-    //       uniforms: {},
-    //       programInfo: programInfo,
-    //       bufferInfo: FbufferInfo,
-    //     };
-    //     this.objects = [vehicle, wheel1, wheel2, wheel3, wheel4];
-    //     this.objectsToDraw = [
-    //       vehicle.drawInfo,
-    //       wheel1.drawInfo,
-    //       wheel2.drawInfo,
-    //       wheel3.drawInfo,
-    //       wheel4.drawInfo,
-    //     ];
+    this.carSections = await this._loadParts(gl, path, filename);
   }
 
   getCarParts() {
     //[{parts:, uniform:}, {parts:, uniform:}, {parts:, uniform:}]
-    return [...this.frontWheels, ...this.body, ...this.backWheels];
+    return this.carSections;
   }
 
   // compute only the first time, then we applied to it the transformations (???)
   getCarCenter(obj) {
     let minMax = getGeometriesExtents(obj.geometries);
+
     minMax.min.forEach((mi, idx) => {
       this.center[idx] = (minMax.max[idx] + mi) / 2;
     });
   }
 
-  async _loadParts(gl, path, filename, getCenter) {
+  // here filter based on 4 wheels and body
+  async _loadParts(gl, path, filename) {
     let [obj, materials] = await utils.loadOBJ(path, filename);
-    if (getCenter) this.getCarCenter(obj);
+    let carPartsObj = [];
+
+    // filter car sections
+    [
+      "MainBody",
+      "LFrontWheel",
+      "RFrontWheel",
+      "LBackWheel",
+      "RBackWheel",
+    ].forEach((partName) =>
+      carPartsObj.push({
+        geometries: obj.geometries.filter(
+          (geometry) => geometry.object == partName
+        ),
+      })
+    );
+
+    this.getCarCenter(carPartsObj[0]); // respect the main body
 
     loadTextures(gl, materials, path, this.defaultTextures);
 
-    return getParts(gl, obj, materials, this.defaultMaterial);
+    return carPartsObj.map((part) =>
+      getParts(gl, part, materials, this.defaultMaterial)
+    );
   }
-
-  /*
-  up
-  down
-  left
-  right
-  */
 
   activeListeners() {
     window.addEventListener("keydown", (e) => {
