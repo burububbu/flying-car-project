@@ -55,6 +55,7 @@ class Scene {
     this.car.activeListeners();
 
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
+    this.camera.followTarget = true;
 
     //TODO cubeFile
   }

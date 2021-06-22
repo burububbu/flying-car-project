@@ -22,6 +22,8 @@ class Camera {
 
     // useful for camera moving
     this.lastPosition = [0, 0, 0];
+
+    this.followTarget = false;
   }
 
   // get camera matrix
@@ -34,11 +36,15 @@ class Camera {
     // y = old z
     // z = old x
 
-    this.cartesianCoord[0] =
-      this.D * Math.sin(this.phi) * Math.sin(this.theta) + this.target[0]; // x (old y)
-    this.cartesianCoord[1] = this.D * Math.cos(this.phi) + this.target[1]; // y (old z)
-    this.cartesianCoord[2] =
-      this.D * Math.sin(this.phi) * Math.cos(this.theta) + this.target[2]; // z (old x)
+    this.cartesianCoord[0] = this.D * Math.sin(this.phi) * Math.sin(this.theta); // x (old y)
+    this.cartesianCoord[1] = this.D * Math.cos(this.phi); // y (old z)
+    this.cartesianCoord[2] = this.D * Math.sin(this.phi) * Math.cos(this.theta); // z (old x)
+
+    if (this.followTarget) {
+      this.cartesianCoord[0] += this.target[0];
+      this.cartesianCoord[1] += this.target[1];
+      this.cartesianCoord[2] += this.target[2];
+    }
   }
 
   // active listeners useful to handle the zoom and camera moving
