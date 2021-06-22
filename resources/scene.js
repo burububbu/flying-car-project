@@ -52,7 +52,7 @@ class Scene {
 
     this.car.activeListeners();
 
-    this.camera.target = this.car.center;
+    this.camera.target = this.car.centers[0]; // look at the body of the vehicle
 
     //TODO cubeFile
   }
@@ -72,8 +72,8 @@ class Scene {
     // programInfo:
   }
 
-  render(time) {
-    time *= 0.001; // converts to seconds
+  render() {
+    // time *= 0.001; // converts to seconds
 
     webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
@@ -82,6 +82,8 @@ class Scene {
     this.gl.useProgram(this.programInfo.program); // TO SET
 
     this.computeAndSetSharedUniforms(this.gl, this.programInfo);
+
+    this.car.doStep();
 
     for (let { parts, uniforms } of [
       ...this.ground,
