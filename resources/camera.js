@@ -1,7 +1,7 @@
 import { degToRad } from "./utils.js";
 
 const rad360 = Math.PI * 2;
-const dr = degToRad(2); // if odd then change phi condition with newPhi + dr > 0 && newPhi <= Math.PI
+const dr = degToRad(1.5); // if odd then change phi condition with newPhi + dr > 0 && newPhi <= Math.PI
 
 // class that represent the camera
 class Camera {

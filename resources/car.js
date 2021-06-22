@@ -87,6 +87,8 @@ class Car {
       });
     });
 
+    
+
     loadTextures(gl, materials, path, this.defaultTextures);
 
     return carPartsObj.map((part) =>
@@ -152,12 +154,17 @@ class Car {
     });
   }
 
+  getCenter(){
+    return [this.state.px, this.state.py, this.state.pz]
+  }
+
   _updateMatrices() {
     // base matrix (relative to the body)
     let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
     matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
     // update body
     this._updateAllWorldMatrices(0, matrix);
+
 
     // L front wheel ind: 1
     let temp_matrix = m4.copy(matrix);

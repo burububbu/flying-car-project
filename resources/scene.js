@@ -84,6 +84,7 @@ class Scene {
     this.computeAndSetSharedUniforms(this.gl, this.programInfo);
 
     this.car.doStep();
+    this.camera.target = this.car.getCenter()
 
     for (let { parts, uniforms } of [
       ...this.ground,
