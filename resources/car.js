@@ -8,8 +8,6 @@ name         index
 "RBackWheel",  3
 */
 
-// compute the distance from the origin for the center of each obj
-
 import {
   create1PixelTexture,
   getParts,
@@ -17,27 +15,24 @@ import {
 } from "./customGlUtils.js";
 import * as utils from "./utils.js";
 
-// constant values used for the computing of steps
+// -------- some constant values used for the computing of steps
+const speedSteering = 3.4; // sterzo
+const speedSteeringReturn = 0.93;
+const accMax = 0.0021; // max accelaration
 
-let velSterzo = 3.4;
-let velRitornoSterzo = 0.93;
-let accMax = 0.0021;
+// speed % mantained (= 1 -> no friction, << 1 high friction)
+// let frictions = [0.991, 0.8, 1.0]; here it's like ice
+// null friction on y
+const frictions = [0.8, 1, 0.991]; // if I change the friction on x, the car slides
 
-// attriti, % di velocità che viene mantenuta (= 1 -> no attrito, << 1 molto attrito)
-let attritoZ = 0.991; // piccolo attrito sulla Z (nel senso di rotolamento delle ruote)
-let attritoX = 0.8; // grande attrito sulla X (per non fare slittare la macchina)
-let attritoY = 1.0; // attrito sulla y nullo
-
-// Nota: vel max = accMax*attritoZ / (1-attritoZ)
-
-let raggioRuotaA = 0.25;
-let raggioRuotaP = 0.3;
-
-let grip = 0.45; // quanto il facing macchina si adegua velocemente allo sterzo
+// NB: max speed = accMax*friction on z / (1-friction on z)
+const radiusFWheel = 0.25; // front wheel
+const grip = 0.45; // how much the vehicle adapts to the steering
 
 class Car {
-  async load(gl, path, filename, programInfo) {
+  async load(gl, path, filename) {
     this._setDefault(gl);
+
     this.centers = [
       [0, 0, 0],
       [0, 0, 0],
@@ -45,8 +40,6 @@ class Car {
       [0, 0, 0],
       [0, 0, 0],
     ];
-
-    this.distancesOrigin = [];
 
     this.keys = [false, false, false, false];
 
@@ -58,21 +51,14 @@ class Car {
       py: 0, // position
       pz: 0, // position
       facing: 0, // orientation
-      mozzoA: 0,
-      mozzoP: 0,
-      sterzo: 0,
+      hub: 0, // (mozzo)
+      steering: 0,
       vx: 0, // actual speed
       vy: 0, // actual speed
       vz: 0, // actual speed
     };
   }
 
-  getCarParts() {
-    //[{parts:, uniform:}, {parts:, uniform:}, {parts:, uniform:}]
-    return this.carSections;
-  }
-
-  // here filter based on 4 wheels and body
   async _loadParts(gl, path, filename) {
     let [obj, materials] = await utils.loadOBJ(path, filename);
     let carPartsObj = [];
@@ -101,8 +87,6 @@ class Car {
       });
     });
 
-    this.computeDistanceOrigin();
-
     loadTextures(gl, materials, path, this.defaultTextures);
 
     return carPartsObj.map((part) =>
@@ -110,14 +94,50 @@ class Car {
     );
   }
 
-  // asp semplicemente devo cambiare segno
-  computeDistanceOrigin() {
-    this.centers.forEach((center) =>
-      this.distancesOrigin.push([0 - center[0], 0 - center[1], 0 - center[2]])
-    );
+  // do a physic step of the car (delta-t constant)
+  doStep() {
+    let vxm, vym, vzm; // car space speed
 
-    console.log(...this.centers);
-    console.log(this.distancesOrigin);
+    // from worls da vel frame mondo a vel frame macchina
+    let cosf = Math.cos((this.state.facing * Math.PI) / 180.0);
+    let sinf = Math.sin((this.state.facing * Math.PI) / 180.0);
+
+    vxm = +cosf * this.state.vx - sinf * this.state.vz;
+    vym = this.state.vy;
+    vzm = +sinf * this.state.vx + cosf * this.state.vz;
+
+    // steeling handler (based on keys set to true)
+    if (this.keys[2]) this.state.steering -= speedSteering; //a
+    if (this.keys[3]) this.state.steering += speedSteering; //d
+    this.state.steering *= speedSteeringReturn;
+
+    if (this.keys[0]) vzm += accMax; // go ahead
+    if (this.keys[1]) vzm -= accMax; // go back
+
+    // apply frictions
+    vxm *= frictions[0];
+    vym *= frictions[1];
+    vzm *= frictions[2];
+
+    // car orientation follows steering orientation (also related to the speed on z)
+    this.state.facing = this.state.facing - vzm * grip * this.state.steering;
+
+    // wheels hub rotation (arelated to the speed in z)
+    let da = (180.0 * vzm) / (Math.PI * radiusFWheel); //delta angolo
+    this.state.hub += da;
+
+    // returns to the world frame speed
+    this.state.vx = +cosf * vxm + sinf * vzm;
+    this.state.vy = vym;
+    this.state.vz = -sinf * vxm + cosf * vzm;
+
+    // compute car position
+    // new position = old position + speed * delta t
+    this.state.px += this.state.vx;
+    this.state.py += this.state.vy;
+    this.state.pz += this.state.vz;
+
+    this._updateMatrices();
   }
 
   activeListeners() {
@@ -132,131 +152,76 @@ class Car {
     });
   }
 
-  // do a physic step of the car (delta-t constant)
-  // fa evolvere le variabili nel tempo (da richiamare ogni volta della funzione render della scena)
-  doStep() {
-    let vxm, vym, vzm; // velocita' in spazio macchina
-
-    // da vel frame mondo a vel frame macchina
-    let cosf = Math.cos((this.state.facing * Math.PI) / 180.0);
-    let sinf = Math.sin((this.state.facing * Math.PI) / 180.0);
-
-    vxm = +cosf * this.state.vx - sinf * this.state.vz;
-    vym = this.state.vy;
-    vzm = +sinf * this.state.vx + cosf * this.state.vz;
-
-    // sterzo handler (based on keys set to true)
-    if (this.keys[2]) this.state.sterzo -= velSterzo; //a
-    if (this.keys[3]) this.state.sterzo += velSterzo; //d
-    this.state.sterzo *= velRitornoSterzo;
-
-    if (this.keys[0]) vzm += accMax; // vai avanti
-    if (this.keys[1]) vzm -= accMax; // vai indietro
-
-    // apply the attriti
-    vxm *= attritoX;
-    vym *= attritoY;
-    vzm *= attritoZ;
-
-    // l'orientamento della macchina segue quello dello sterzo
-    // (a seconda della velocita' sulla z)
-    this.state.facing = this.state.facing - vzm * grip * this.state.sterzo;
-
-    // rotazione mozzo ruote (a seconda della velocita' sulla z)
-    let da = (180.0 * vzm) / (Math.PI * raggioRuotaA); //delta angolo
-    this.state.mozzoA += da;
-
-    da = (180.0 * vzm) / (Math.PI * raggioRuotaP);
-    this.state.mozzoP += da;
-
-    // ritorno a vel coord mondo
-    this.state.vx = +cosf * vxm + sinf * vzm;
-    this.state.vy = vym;
-    this.state.vz = -sinf * vxm + cosf * vzm;
-
-    // compute position px py an pz
-    // position = old position + speed * delta t
-    this.state.px += this.state.vx;
-    this.state.py += this.state.vy;
-    this.state.pz += this.state.vz;
-
-    this.updateMatrices();
-  }
-
-  updateMatrices() {
+  _updateMatrices() {
     // base matrix (relative to the body)
-    let matrix = m4.translation(this.state.px, this.state.py, this.state.pz);
+    let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
     matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
-
     // update body
-    this.updateAllMat(0, matrix);
+    this._updateAllWorldMatrices(0, matrix);
 
     // L front wheel ind: 1
-    let mo_matrix1 = m4.copy(matrix);
+    let temp_matrix = m4.copy(matrix);
     // return to the initial position
-    mo_matrix1 = m4.translate(mo_matrix1, ...this.centers[1]);
-
-    mo_matrix1 = m4.yRotate(mo_matrix1, -utils.degToRad(this.state.sterzo));
-    mo_matrix1 = m4.xRotate(mo_matrix1, utils.degToRad(this.state.mozzoA));
+    temp_matrix = m4.translate(temp_matrix, ...this.centers[1]);
+    temp_matrix = m4.yRotate(temp_matrix, -utils.degToRad(this.state.steering));
+    temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
     // translate to center
-    mo_matrix1 = m4.translate(
-      mo_matrix1,
+    temp_matrix = m4.translate(
+      temp_matrix,
       -this.centers[1][0],
       -this.centers[1][1],
       -this.centers[1][2]
     );
 
-    this.updateAllMat(1, mo_matrix1);
+    this._updateAllWorldMatrices(1, temp_matrix);
 
     // R front wheel ind: 2
-    mo_matrix1 = m4.copy(matrix);
+    temp_matrix = m4.copy(matrix);
     // return to the initial position
-    mo_matrix1 = m4.translate(mo_matrix1, ...this.centers[2]);
+    temp_matrix = m4.translate(temp_matrix, ...this.centers[2]);
 
-    mo_matrix1 = m4.yRotate(mo_matrix1, -utils.degToRad(this.state.sterzo));
-    mo_matrix1 = m4.xRotate(mo_matrix1, utils.degToRad(this.state.mozzoA));
+    temp_matrix = m4.yRotate(temp_matrix, -utils.degToRad(this.state.steering));
+    temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
 
-    mo_matrix1 = m4.translate(
-      mo_matrix1,
+    temp_matrix = m4.translate(
+      temp_matrix,
       -this.centers[2][0],
       -this.centers[2][1],
       -this.centers[2][2]
     );
 
-    this.updateAllMat(2, mo_matrix1);
+    this._updateAllWorldMatrices(2, temp_matrix);
 
     // L back wheel ind: 3
-    mo_matrix1 = m4.copy(matrix);
+    temp_matrix = m4.copy(matrix);
 
-    mo_matrix1 = m4.translate(mo_matrix1, ...this.centers[3]);
-    mo_matrix1 = m4.xRotate(mo_matrix1, utils.degToRad(this.state.mozzoA));
-    mo_matrix1 = m4.translate(
-      mo_matrix1,
+    temp_matrix = m4.translate(temp_matrix, ...this.centers[3]);
+    temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
+    temp_matrix = m4.translate(
+      temp_matrix,
       -this.centers[3][0],
       -this.centers[3][1],
       -this.centers[3][2]
     );
-    this.updateAllMat(3, mo_matrix1);
+    this._updateAllWorldMatrices(3, temp_matrix);
 
     // R back wheel ind: 4
-    mo_matrix1 = m4.copy(matrix);
+    temp_matrix = m4.copy(matrix);
 
-    mo_matrix1 = m4.translate(mo_matrix1, ...this.centers[4]);
-    mo_matrix1 = m4.xRotate(mo_matrix1, utils.degToRad(this.state.mozzoA));
+    temp_matrix = m4.translate(temp_matrix, ...this.centers[4]);
+    temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
 
-    mo_matrix1 = m4.translate(
-      mo_matrix1,
+    temp_matrix = m4.translate(
+      temp_matrix,
       -this.centers[4][0],
       -this.centers[4][1],
       -this.centers[4][2]
     );
 
-    this.updateAllMat(4, mo_matrix1);
-
-    // ruote -> spostate al centro, ruotate, risistemate
+    this._updateAllWorldMatrices(4, temp_matrix);
   }
 
-  updateAllMat(index, matrix) {
+  _updateAllWorldMatrices(index, matrix) {
     for (let { _, uniforms } of this.carSections[index]) {
       uniforms.u_world = matrix;
     }

@@ -88,7 +88,7 @@ class Scene {
     for (let { parts, uniforms } of [
       ...this.ground,
       ...this.background,
-      ...this.car.getCarParts().flat(),
+      ...this.car.carSections.flat(),
     ]) {
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
       webglUtils.setBuffersAndAttributes(
