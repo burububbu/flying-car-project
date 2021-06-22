@@ -29,6 +29,8 @@ class Scene {
     this._setDefault(); // initialize defaults
 
     this.lightPosition = lightPosition; // [...lightPosition] if more than one light
+
+    this.followCar = true;
   }
 
   async loadScene(
@@ -81,10 +83,12 @@ class Scene {
 
     this.gl.useProgram(this.programInfo.program); // TO SET
 
-    this.computeAndSetSharedUniforms(this.gl, this.programInfo);
+    this._computeAndSetSharedUniforms(this.gl, this.programInfo);
 
     this.car.doStep();
-    this.camera.target = this.car.getCenter()
+
+    this.camera.target = this.car.getCenter();
+    this.camera.updateCartesianCoord();
 
     for (let { parts, uniforms } of [
       ...this.ground,
@@ -106,7 +110,7 @@ class Scene {
     requestAnimationFrame(this.render.bind(this));
   }
 
-  computeAndSetSharedUniforms() {
+  _computeAndSetSharedUniforms() {
     let projection = m4.perspective(
       utils.degToRad(setView.fieldOfView),
       this.gl.canvas.clientWidth / this.gl.canvas.clientHeight, //aspect
