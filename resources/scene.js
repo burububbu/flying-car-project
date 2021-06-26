@@ -1,6 +1,7 @@
 // scene handler: in this way we can create different scenes
 
 import { Camera } from "./camera.js";
+import { ControlPanel } from "./controlPanel.js";
 import { Car } from "./car.js";
 import {
   create1PixelTexture,
@@ -18,7 +19,7 @@ let setView = {
 // the scene shares a unique programInfo
 class Scene {
   // cube to collect = [cube1, cube2.]
-  constructor(gl, programInfo, lightPosition, cam, canvas) {
+  constructor(gl, programInfo, lightPosition, cam, canvas, controlCanvas) {
     // create camera
     this.camera = new Camera(cam.D, cam.theta, cam.phi, cam.up, cam.target);
     this.camera.activeListeners(canvas);
@@ -30,7 +31,7 @@ class Scene {
 
     this.lightPosition = lightPosition; // [...lightPosition] if more than one light
 
-    this.followCar = true;
+    this.controlPanel = new ControlPanel(controlCanvas, this.camera);
   }
 
   async loadScene(
@@ -38,11 +39,18 @@ class Scene {
     groundFile, // terrain -> terrain/terrain.obj
     backgroundFile,
     carFile, // [vehicle, front wheels, back wheels]
-    cubeFile
+    cubeFile,
+    controlCanvas
   ) {
     // personal uniforms -> u_world = identity()
-    this.ground = await this._loadParts(path, groundFile);
-    this.background = await this._loadParts(path, backgroundFile);
+    let groundRes = await this._loadParts(path, groundFile, true);
+
+    this.ground = groundRes.parts;
+    this.groundExtents = groundRes.extents; // i'm only interested in x and z
+
+    this.background = await (
+      await this._loadParts(path, groundFile, false)
+    ).parts;
 
     this.car = new Car();
     await this.car.load(
@@ -51,26 +59,36 @@ class Scene {
       carFile,
       this.programInfo
     );
+    this.car.loadLimits(this.groundExtents);
 
+    // true ud pc, false if phone  tablet
     this.car.activeListeners();
 
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
-    this.camera.followTarget = true;
 
     //TODO cubeFile
   }
 
   // obj file must be in a folder with the same name
-  async _loadParts(path, filename) {
+  async _loadParts(path, filename, getExtents) {
     let realpath = path + filename + "/";
+    let extents = [];
 
     let [obj, materials] = await utils.loadOBJ(
       realpath, // es: obj/terrain/
       filename // terrain.obj
     );
+
+    if (getExtents) {
+      extents = utils.getGeometriesExtents(obj.geometries);
+    }
+
     loadTextures(this.gl, materials, realpath, this.defaultTextures);
 
-    return getParts(this.gl, obj, materials, this.defaultMaterial);
+    return {
+      parts: getParts(this.gl, obj, materials, this.defaultMaterial),
+      extents: extents,
+    };
     // uniforms:
     // programInfo:
   }
@@ -88,8 +106,14 @@ class Scene {
 
     this.car.doStep();
 
-    this.camera.target = this.car.getCenter();
-    this.camera.updateCartesianCoord();
+    if (this.camera.followTarget) {
+      this.camera.target = this.car.getCenter();
+
+      if (this.camera.rotateWithTarget)
+        this.camera.theta = utils.degToRad(this.car.state.facing + 180);
+
+      this.camera.updateCartesianCoord();
+    }
 
     for (let { parts, uniforms } of [
       ...this.ground,

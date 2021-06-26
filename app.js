@@ -46,7 +46,8 @@ async function main() {
     "terrain", // ground
     "", // background
     "DeLorean", // car
-    "" // object
+    "", // object
+    canvas
   );
 
   scene.render();

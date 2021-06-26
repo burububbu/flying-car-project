@@ -41,6 +41,20 @@ class Car {
       [0, 0, 0],
     ];
 
+    this.extents = {
+      back: [
+        Number.POSITIVE_INFINITY,
+        Number.POSITIVE_INFINITY,
+        Number.POSITIVE_INFINITY,
+      ],
+      front: [
+        Number.NEGATIVE_INFINITY,
+        Number.NEGATIVE_INFINITY,
+        Number.NEGATIVE_INFINITY,
+      ],
+    }; // min and max value (a sort of rectangle that represent the car)
+
+    this.limits = undefined;
     this.keys = [false, false, false, false];
 
     this.carSections = await this._loadParts(gl, path, filename);
@@ -78,16 +92,29 @@ class Car {
       })
     );
 
+    let extents = [];
+
     // computed all centers
     carPartsObj.forEach((obj, ind) => {
       let minMax = utils.getGeometriesExtents(obj.geometries);
+
+      extents.push(minMax);
 
       minMax.min.forEach((minValue, index) => {
         this.centers[ind][index] = (minMax.max[index] + minValue) / 2;
       });
     });
 
-    
+    // compute global min and max (with 0 as origin) (then we have to sum to px  py and pz)
+    for (let { min, max } of extents) {
+      min.forEach((value, ind) => {
+        if (this.extents.front[ind] < value) this.extents.front[ind] = value;
+      });
+
+      max.forEach((value, ind) => {
+        if (this.extents.back[ind] > value) this.extents.back[ind] = value;
+      });
+    }
 
     loadTextures(gl, materials, path, this.defaultTextures);
 
@@ -96,66 +123,126 @@ class Car {
     );
   }
 
+  loadLimits(limits) {
+    /*
+      {
+        min: [0,0,0],
+        max: [0,0,0]
+      }    
+    */
+    this.limits = limits;
+  }
+
+  isInside() {
+    // based on front wheels and back wheels
+    // i'm interested only in x and z
+    let center = this.getCenter();
+
+    let frontPos = [
+      this.extents.front[0] + this.state.px,
+      this.extents.front[2] + this.state.pz,
+    ];
+
+    let backPos = [
+      this.extents.back[0] + this.state.px,
+      this.extents.back[2] + this.state.pz,
+    ];
+
+    // console.log(backPos, this.limits.min, this.limits.max);
+
+    // sia la z min che maz devono essere comprese tra limits.z min e max
+    // sia la z min che maz devono essere comprese tra limits.z min e max
+
+    let value =
+      this.limits.min[0] < frontPos[0] &&
+      frontPos[0] < this.limits.max[0] &&
+      this.limits.min[2] < frontPos[1] &&
+      frontPos[1] < this.limits.max[2] &&
+      this.limits.min[0] < backPos[0] &&
+      backPos[0] < this.limits.max[0] &&
+      this.limits.min[2] < backPos[1] &&
+      backPos[1] < this.limits.max[2];
+
+    // let value =
+    //   this.limits.min[0] < frontPos[0] < this.limits.max[0] &&
+    //   this.limits.min[2] < frontPos[1] < this.limits.max[2] &&
+    //   this.limits.min[0] < backPos[0] < this.limits.max[0] &&
+    //   this.limits.min[2] < backPos[1] < this.limits.max[2];
+
+    return value;
+  }
+
   // do a physic step of the car (delta-t constant)
   doStep() {
-    let vxm, vym, vzm; // car space speed
+    // se ci sono limiti la macchina sta andando fuori, reset della posizione a [0,0,0]
+    // check limits only for x and z
 
-    // from worls da vel frame mondo a vel frame macchina
-    let cosf = Math.cos((this.state.facing * Math.PI) / 180.0);
-    let sinf = Math.sin((this.state.facing * Math.PI) / 180.0);
+    if (this.limits && !this.isInside()) {
+      this.state.px = 0;
+      this.state.py = 0;
+      this.state.pz = 0;
+    } else {
+      let vxm, vym, vzm; // car space speed
 
-    vxm = +cosf * this.state.vx - sinf * this.state.vz;
-    vym = this.state.vy;
-    vzm = +sinf * this.state.vx + cosf * this.state.vz;
+      // from worls da vel frame mondo a vel frame macchina
+      let cosf = Math.cos((this.state.facing * Math.PI) / 180.0);
+      let sinf = Math.sin((this.state.facing * Math.PI) / 180.0);
 
-    // steeling handler (based on keys set to true)
-    if (this.keys[2]) this.state.steering -= speedSteering; //a
-    if (this.keys[3]) this.state.steering += speedSteering; //d
-    this.state.steering *= speedSteeringReturn;
+      vxm = +cosf * this.state.vx - sinf * this.state.vz;
+      vym = this.state.vy;
+      vzm = +sinf * this.state.vx + cosf * this.state.vz;
 
-    if (this.keys[0]) vzm += accMax; // go ahead
-    if (this.keys[1]) vzm -= accMax; // go back
+      // steeling handler (based on keys set to true)
+      if (this.keys[2]) this.state.steering -= speedSteering; //a
+      if (this.keys[3]) this.state.steering += speedSteering; //d
+      this.state.steering *= speedSteeringReturn;
 
-    // apply frictions
-    vxm *= frictions[0];
-    vym *= frictions[1];
-    vzm *= frictions[2];
+      if (this.keys[0]) vzm += accMax; // go ahead
+      if (this.keys[1]) vzm -= accMax; // go back
 
-    // car orientation follows steering orientation (also related to the speed on z)
-    this.state.facing = this.state.facing - vzm * grip * this.state.steering;
+      // apply frictions
+      vxm *= frictions[0];
+      vym *= frictions[1];
+      vzm *= frictions[2];
 
-    // wheels hub rotation (arelated to the speed in z)
-    let da = (180.0 * vzm) / (Math.PI * radiusFWheel); //delta angolo
-    this.state.hub += da;
+      // car orientation follows steering orientation (also related to the speed on z)
+      this.state.facing = this.state.facing - vzm * grip * this.state.steering;
 
-    // returns to the world frame speed
-    this.state.vx = +cosf * vxm + sinf * vzm;
-    this.state.vy = vym;
-    this.state.vz = -sinf * vxm + cosf * vzm;
+      // wheels hub rotation (arelated to the speed in z)
+      let da = (180.0 * vzm) / (Math.PI * radiusFWheel); //delta angolo
+      this.state.hub += da;
 
-    // compute car position
-    // new position = old position + speed * delta t
-    this.state.px += this.state.vx;
-    this.state.py += this.state.vy;
-    this.state.pz += this.state.vz;
+      // returns to the world frame speed
+      this.state.vx = +cosf * vxm + sinf * vzm;
+      this.state.vy = vym;
+      this.state.vz = -sinf * vxm + cosf * vzm;
+
+      // compute car position
+      // new position = old position + speed * delta t
+      this.state.px += this.state.vx;
+      this.state.py += this.state.vy;
+      this.state.pz += this.state.vz;
+    }
 
     this._updateMatrices();
   }
 
-  activeListeners() {
-    window.addEventListener("keydown", (e) => {
-      let ind = ["w", "s", "a", "d"].indexOf(e.key);
-      if (ind > -1) this.keys[ind] = true;
-    });
+  activeListeners(pc = true) {
+    if (pc) {
+      window.addEventListener("keydown", (e) => {
+        let ind = ["w", "s", "a", "d"].indexOf(e.key);
+        if (ind > -1) this.keys[ind] = true;
+      });
 
-    window.addEventListener("keyup", (e) => {
-      let ind = ["w", "s", "a", "d"].indexOf(e.key);
-      if (ind > -1) this.keys[ind] = false;
-    });
+      window.addEventListener("keyup", (e) => {
+        let ind = ["w", "s", "a", "d"].indexOf(e.key);
+        if (ind > -1) this.keys[ind] = false;
+      });
+    }
   }
 
-  getCenter(){
-    return [this.state.px, this.state.py, this.state.pz]
+  getCenter() {
+    return [this.state.px, this.state.py, this.state.pz];
   }
 
   _updateMatrices() {
@@ -164,7 +251,6 @@ class Car {
     matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
     // update body
     this._updateAllWorldMatrices(0, matrix);
-
 
     // L front wheel ind: 1
     let temp_matrix = m4.copy(matrix);

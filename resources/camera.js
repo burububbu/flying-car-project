@@ -24,6 +24,7 @@ class Camera {
     this.lastPosition = [0, 0, 0];
 
     this.followTarget = false;
+    this.rotateWithTarget = false;
   }
 
   // get camera matrix
@@ -50,8 +51,8 @@ class Camera {
   // active listeners useful to handle the zoom and camera moving
   activeListeners(canvas) {
     let moveHandler = (event) => {
-      // mouse movement on y axis
-      if (event.pageX !== this.lastPosition[0]) {
+      // mouse movement on x axis
+      if (!this.rotateWithTarget && event.pageX !== this.lastPosition[0]) {
         event.pageX > this.lastPosition[0] // % (rad360) because theta have to be between 0 and 2PI (here i check only the latter condition)
           ? (this.theta = this.theta + (dr % rad360))
           : (this.theta = this.theta - (dr % rad360));
@@ -93,7 +94,7 @@ function phiCheck(phi, dr) {
   let newPhi = phi + dr;
 
   // maybe reset to if (newPhi + dr >= 0 && newPhi <= Math.PI)
-  if (newPhi + dr >= degToRad(30) && newPhi <= Math.PI / 2 - degToRad(3)) {
+  if (newPhi + dr >= degToRad(30) && newPhi <= Math.PI / 2 - degToRad(5)) {
     return newPhi;
   } else return phi;
 }
