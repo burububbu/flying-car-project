@@ -16,6 +16,7 @@ class ControlPanel {
 
     this.carSettings = {
       number: 0,
+      fly: false,
     };
 
     this.groundSettings = {
@@ -37,6 +38,11 @@ class ControlPanel {
         case "r":
           if (this.camera.followTarget)
             this.camera.rotateWithTarget = !this.camera.rotateWithTarget;
+          break;
+
+        case "y":
+          this.carSettings.fly = !this.carSettings.fly;
+          console.log(this.carSettings.fly);
           break;
 
         default:

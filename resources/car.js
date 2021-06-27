@@ -20,6 +20,12 @@ const speedSteering = 3.4; // sterzo
 const speedSteeringReturn = 0.93;
 const accMax = 0.0021; // max accelaration
 
+const speedRotating = 0.8;
+const maxHeight = 2;
+const minHeight = 1.5;
+const yAdd = 0.001;
+const fluctateValue = 0.001;
+
 // speed % mantained (= 1 -> no friction, << 1 high friction)
 // let frictions = [0.991, 0.8, 1.0]; here it's like ice
 // null friction on y
@@ -70,6 +76,8 @@ class Car {
       vx: 0, // actual speed
       vy: 0, // actual speed
       vz: 0, // actual speed
+
+      zRotate: 0,
     };
   }
 
@@ -173,7 +181,8 @@ class Car {
   }
 
   // do a physic step of the car (delta-t constant)
-  doStep() {
+
+  doStep(fly) {
     // se ci sono limiti la macchina sta andando fuori, reset della posizione a [0,0,0]
     // check limits only for x and z
 
@@ -189,8 +198,22 @@ class Car {
       let sinf = Math.sin((this.state.facing * Math.PI) / 180.0);
 
       vxm = +cosf * this.state.vx - sinf * this.state.vz;
-      vym = this.state.vy;
       vzm = +sinf * this.state.vx + cosf * this.state.vz;
+
+      if (!fly) {
+        if (this.state.py > 0) {
+          vym = this.state.vy - yAdd;
+        } else vym = 0;
+      } else {
+        // fly
+        if (this.state.py < maxHeight) {
+          // until it reaches the max height
+          vym = this.state.vy + yAdd;
+        } else {
+          // handle this
+          vym = 0;
+        }
+      }
 
       // steeling handler (based on keys set to true)
       if (this.keys[2]) this.state.steering -= speedSteering; //a
@@ -222,9 +245,17 @@ class Car {
       this.state.px += this.state.vx;
       this.state.py += this.state.vy;
       this.state.pz += this.state.vz;
-    }
 
-    this._updateMatrices();
+      if (fly) {
+        if (this.state.zRotate < 30) this.state.zRotate += speedRotating;
+      } else {
+        if (this.state.zRotate > 0) {
+          this.state.zRotate -= speedRotating;
+        } else this.state.zRotate = 0;
+      }
+
+      this._updateMatrices(fly);
+    }
   }
 
   activeListeners(pc = true) {
@@ -245,73 +276,179 @@ class Car {
     return [this.state.px, this.state.py, this.state.pz];
   }
 
-  _updateMatrices() {
-    // base matrix (relative to the body)
-    let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
-    matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
-    // update body
-    this._updateAllWorldMatrices(0, matrix);
+  _updateMatrices(fly) {
+    if (!fly) {
+      // base matrix (relative to the body)
+      let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
+      matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
+      // update body
+      this._updateAllWorldMatrices(0, matrix);
 
-    // L front wheel ind: 1
-    let temp_matrix = m4.copy(matrix);
-    // return to the initial position
-    temp_matrix = m4.translate(temp_matrix, ...this.centers[1]);
-    temp_matrix = m4.yRotate(temp_matrix, -utils.degToRad(this.state.steering));
-    temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
-    // translate to center
-    temp_matrix = m4.translate(
-      temp_matrix,
-      -this.centers[1][0],
-      -this.centers[1][1],
-      -this.centers[1][2]
-    );
+      // L front wheel ind: 1
+      let temp_matrix = m4.copy(matrix);
+      // return to the initial position
+      temp_matrix = m4.translate(temp_matrix, ...this.centers[1]);
+      temp_matrix = m4.zRotate(
+        temp_matrix,
+        -utils.degToRad(this.state.zRotate)
+      );
+      temp_matrix = m4.yRotate(
+        temp_matrix,
+        -utils.degToRad(this.state.steering)
+      );
+      temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
+      // translate to center
+      temp_matrix = m4.translate(
+        temp_matrix,
+        -this.centers[1][0],
+        -this.centers[1][1],
+        -this.centers[1][2]
+      );
 
-    this._updateAllWorldMatrices(1, temp_matrix);
+      this._updateAllWorldMatrices(1, temp_matrix);
 
-    // R front wheel ind: 2
-    temp_matrix = m4.copy(matrix);
-    // return to the initial position
-    temp_matrix = m4.translate(temp_matrix, ...this.centers[2]);
+      // R front wheel ind: 2
+      temp_matrix = m4.copy(matrix);
+      // return to the initial position
+      temp_matrix = m4.translate(temp_matrix, ...this.centers[2]);
 
-    temp_matrix = m4.yRotate(temp_matrix, -utils.degToRad(this.state.steering));
-    temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
+      temp_matrix = m4.zRotate(temp_matrix, utils.degToRad(this.state.zRotate));
+      temp_matrix = m4.yRotate(
+        temp_matrix,
+        -utils.degToRad(this.state.steering)
+      );
+      temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
 
-    temp_matrix = m4.translate(
-      temp_matrix,
-      -this.centers[2][0],
-      -this.centers[2][1],
-      -this.centers[2][2]
-    );
+      temp_matrix = m4.translate(
+        temp_matrix,
+        -this.centers[2][0],
+        -this.centers[2][1],
+        -this.centers[2][2]
+      );
 
-    this._updateAllWorldMatrices(2, temp_matrix);
+      this._updateAllWorldMatrices(2, temp_matrix);
 
-    // L back wheel ind: 3
-    temp_matrix = m4.copy(matrix);
+      // L back wheel ind: 3
+      temp_matrix = m4.copy(matrix);
 
-    temp_matrix = m4.translate(temp_matrix, ...this.centers[3]);
-    temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
-    temp_matrix = m4.translate(
-      temp_matrix,
-      -this.centers[3][0],
-      -this.centers[3][1],
-      -this.centers[3][2]
-    );
-    this._updateAllWorldMatrices(3, temp_matrix);
+      temp_matrix = m4.translate(temp_matrix, ...this.centers[3]);
 
-    // R back wheel ind: 4
-    temp_matrix = m4.copy(matrix);
+      temp_matrix = m4.zRotate(
+        temp_matrix,
+        -utils.degToRad(this.state.zRotate)
+      );
+      temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
+      temp_matrix = m4.translate(
+        temp_matrix,
+        -this.centers[3][0],
+        -this.centers[3][1],
+        -this.centers[3][2]
+      );
+      this._updateAllWorldMatrices(3, temp_matrix);
 
-    temp_matrix = m4.translate(temp_matrix, ...this.centers[4]);
-    temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
+      // R back wheel ind: 4
+      temp_matrix = m4.copy(matrix);
 
-    temp_matrix = m4.translate(
-      temp_matrix,
-      -this.centers[4][0],
-      -this.centers[4][1],
-      -this.centers[4][2]
-    );
+      temp_matrix = m4.translate(temp_matrix, ...this.centers[4]);
+      temp_matrix = m4.zRotate(temp_matrix, utils.degToRad(this.state.zRotate));
+      temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
 
-    this._updateAllWorldMatrices(4, temp_matrix);
+      temp_matrix = m4.translate(
+        temp_matrix,
+        -this.centers[4][0],
+        -this.centers[4][1],
+        -this.centers[4][2]
+      );
+
+      this._updateAllWorldMatrices(4, temp_matrix);
+    } else {
+      // the car flies
+      // base matrix (relative to the body)
+
+      let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
+      matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 50));
+      matrix = m4.zRotate(matrix, -utils.degToRad(this.state.vx * 50));
+      matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
+
+      // update body
+      this._updateAllWorldMatrices(0, matrix);
+
+      // let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
+
+      // // facing also for rotating right / left
+      // matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 100));
+      // matrix = m4.yRotate(matrix, -utils.degToRad(this.state.facing - 10));
+
+      // matrix = m4.zRotate(matrix, utils.degToRad(this.state.facing));
+
+      // update body
+      // this._updateAllWorldMatrices(0, matrix);
+
+      // L front wheel ind: 1
+      let temp_matrix = m4.copy(matrix);
+      // return to the initial position
+      temp_matrix = m4.translate(temp_matrix, ...this.centers[1]);
+
+      temp_matrix = m4.zRotate(
+        temp_matrix,
+        -utils.degToRad(this.state.zRotate)
+      );
+      // translate to center
+      temp_matrix = m4.translate(
+        temp_matrix,
+        -this.centers[1][0],
+        -this.centers[1][1],
+        -this.centers[1][2]
+      );
+
+      this._updateAllWorldMatrices(1, temp_matrix);
+
+      // R front wheel ind: 2
+      temp_matrix = m4.copy(matrix);
+      // return to the initial position
+      temp_matrix = m4.translate(temp_matrix, ...this.centers[2]);
+
+      temp_matrix = m4.zRotate(temp_matrix, utils.degToRad(this.state.zRotate));
+      temp_matrix = m4.translate(
+        temp_matrix,
+        -this.centers[2][0],
+        -this.centers[2][1],
+        -this.centers[2][2]
+      );
+
+      this._updateAllWorldMatrices(2, temp_matrix);
+
+      // L back wheel ind: 3
+      temp_matrix = m4.copy(matrix);
+
+      temp_matrix = m4.translate(temp_matrix, ...this.centers[3]);
+      temp_matrix = m4.zRotate(
+        temp_matrix,
+        -utils.degToRad(this.state.zRotate)
+      );
+      temp_matrix = m4.translate(
+        temp_matrix,
+        -this.centers[3][0],
+        -this.centers[3][1],
+        -this.centers[3][2]
+      );
+      this._updateAllWorldMatrices(3, temp_matrix);
+
+      // R back wheel ind: 4
+      temp_matrix = m4.copy(matrix);
+
+      temp_matrix = m4.translate(temp_matrix, ...this.centers[4]);
+      temp_matrix = m4.zRotate(temp_matrix, utils.degToRad(this.state.zRotate));
+
+      temp_matrix = m4.translate(
+        temp_matrix,
+        -this.centers[4][0],
+        -this.centers[4][1],
+        -this.centers[4][2]
+      );
+
+      this._updateAllWorldMatrices(4, temp_matrix);
+    }
   }
 
   _updateAllWorldMatrices(index, matrix) {

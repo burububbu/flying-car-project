@@ -104,7 +104,7 @@ class Scene {
 
     this._computeAndSetSharedUniforms(this.gl, this.programInfo);
 
-    this.car.doStep();
+    this.car.doStep(this.controlPanel.carSettings.fly);
 
     if (this.camera.followTarget) {
       this.camera.target = this.car.getCenter();
