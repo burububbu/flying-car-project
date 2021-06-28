@@ -30,8 +30,6 @@ class Scene {
     this._setDefault(); // initialize defaults
 
     this.lightPosition = lightPosition; // [...lightPosition] if more than one light
-
-    this.controlPanel = new ControlPanel(controlCanvas, this.camera);
   }
 
   async loadScene(
@@ -65,6 +63,8 @@ class Scene {
     this.car.activeListeners();
 
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
+
+    this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car);
 
     //TODO cubeFile
   }
@@ -103,6 +103,8 @@ class Scene {
     this.gl.useProgram(this.programInfo.program); // TO SET
 
     this._computeAndSetSharedUniforms(this.gl, this.programInfo);
+
+    // check if the car can fly, it have to be sopped
 
     this.car.doStep(this.controlPanel.carSettings.fly);
 

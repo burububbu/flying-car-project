@@ -70,9 +70,11 @@ class Car {
       px: 0, // position
       py: 0, // position
       pz: 0, // position
+
       facing: 0, // orientation
       hub: 0, // (mozzo)
       steering: 0,
+
       vx: 0, // actual speed
       vy: 0, // actual speed
       vz: 0, // actual speed
@@ -141,10 +143,18 @@ class Car {
     this.limits = limits;
   }
 
+  isStopped() {
+    return (
+      this.state.vz > -0.01 &&
+      this.state.vz < 0.01 &&
+      this.state.vx > -0.01 &&
+      this.state.vx < 0.01
+    );
+  }
+
   isInside() {
     // based on front wheels and back wheels
     // i'm interested only in x and z
-    let center = this.getCenter();
 
     let frontPos = [
       this.extents.front[0] + this.state.px,
@@ -366,8 +376,9 @@ class Car {
       // base matrix (relative to the body)
 
       let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
-      matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 50));
-      matrix = m4.zRotate(matrix, -utils.degToRad(this.state.vx * 50));
+
+      matrix = m4.zRotate(matrix, -utils.degToRad(this.state.vx * 100));
+      matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 80));
       matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
 
       // update body

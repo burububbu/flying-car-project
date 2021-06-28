@@ -4,10 +4,11 @@
 // has the camera object
 class ControlPanel {
   // maybe main canvas isn't useful, use window
-  constructor(controlCanvas, camera) {
+  constructor(controlCanvas, camera, car) {
     this.controlCanvas = controlCanvas;
 
     this.camera = camera;
+    this.car = car;
 
     // this.cameraSettings = {
     //   follow: false,
@@ -41,8 +42,9 @@ class ControlPanel {
           break;
 
         case "y":
-          this.carSettings.fly = !this.carSettings.fly;
-          console.log(this.carSettings.fly);
+          if (this.car.isStopped())
+            this.carSettings.fly = !this.carSettings.fly;
+
           break;
 
         default:
