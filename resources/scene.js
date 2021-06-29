@@ -118,8 +118,6 @@ class Scene {
   }
 
   render() {
-    // time *= 0.001; // converts to seconds
-
     webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
     this.gl.enable(this.gl.DEPTH_TEST);
@@ -141,6 +139,8 @@ class Scene {
       this.camera.updateCartesianCoord();
     }
 
+    this.moveCube();
+
     for (let { parts, uniforms } of [
       ...this.ground,
       ...this.background,
@@ -160,6 +160,12 @@ class Scene {
     }
 
     requestAnimationFrame(this.render.bind(this));
+  }
+
+  moveCube() {
+    for (let { _, uniforms } of this.cube) {
+      uniforms.u_world = m4.yRotate(uniforms.u_world, utils.degToRad(1));
+    }
   }
 
   _computeAndSetSharedUniforms() {
