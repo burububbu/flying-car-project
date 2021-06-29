@@ -6,11 +6,11 @@ import { Scene } from "./resources/scene.js";
 
 // data useful for the computing of the view
 
-let lightPosition = [0, 50, 0];
+let lightPosition = [0, 100, 0];
 
 // set theta and phi to 0 because we are on z axis
 let cameraSettings = {
-  D: 20, // D
+  D: 15, // D
   theta: utils.degToRad(180), // theta with theta = 0 and phi = 90°, we're on z axis
   phi: utils.degToRad(60), // phi
   up: [0, 1, 0], //up

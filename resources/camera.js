@@ -23,8 +23,8 @@ class Camera {
     // useful for camera moving
     this.lastPosition = [0, 0, 0];
 
-    this.followTarget = false;
-    this.rotateWithTarget = false;
+    this.followTarget = true;
+    this.rotateWithTarget = true;
   }
 
   // get camera matrix
@@ -79,7 +79,7 @@ class Camera {
 
     // zoom in zoom out
     canvas.addEventListener("wheel", (event) => {
-      if (this.D > 10 || event.deltaY < 0) this.D += event.deltaY * -0.01; // in this way
+      if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.01; // in this way
       this.updateCartesianCoord();
     });
   }

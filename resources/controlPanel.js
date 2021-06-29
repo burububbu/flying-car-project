@@ -24,6 +24,8 @@ class ControlPanel {
       number: 0,
     };
 
+    this.cubes = 0;
+
     this._activeListeners();
   }
 
@@ -44,6 +46,7 @@ class ControlPanel {
         case "y":
           if (this.car.isStopped())
             this.carSettings.fly = !this.carSettings.fly;
+          if (!this.carSettings.fly) this.car.state.fluctuate = false;
 
           break;
 
@@ -52,6 +55,13 @@ class ControlPanel {
           break;
       }
     });
+  }
+
+  addCube() {
+    this.cubes += 1;
+    if (this.cubes == 5) {
+      console.log("you win");
+    }
   }
 }
 

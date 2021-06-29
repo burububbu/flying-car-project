@@ -21,10 +21,11 @@ const speedSteeringReturn = 0.93;
 const accMax = 0.0021; // max accelaration
 
 const speedRotating = 0.8;
-const maxHeight = 2;
-const minHeight = 1.5;
+const maxHeight = 3;
+// const minHeight = 1.5;
 const yAdd = 0.001;
-const fluctateValue = 0.001;
+
+const fluctuateValues = [0.0001, 0.01];
 
 // speed % mantained (= 1 -> no friction, << 1 high friction)
 // let frictions = [0.991, 0.8, 1.0]; here it's like ice
@@ -80,6 +81,7 @@ class Car {
       vz: 0, // actual speed
 
       zRotate: 0,
+      fluctuate: false,
     };
   }
 
@@ -166,7 +168,7 @@ class Car {
       this.extents.back[2] + this.state.pz,
     ];
 
-    // console.log(backPos, this.limits.min, this.limits.max);
+
 
     // sia la z min che maz devono essere comprese tra limits.z min e max
     // sia la z min che maz devono essere comprese tra limits.z min e max
@@ -186,6 +188,45 @@ class Car {
     return value;
   }
 
+  collideWithTheCube(cubeExtent) {
+    /* {
+      min: [],
+      max: []
+    } */
+
+    // cube min or max are cbeetween min and maz of the car
+    let frontPos = [
+      // min
+      this.extents.front[0] + this.state.px,
+      this.extents.front[1] + this.state.py,
+      this.extents.front[2] + this.state.pz,
+    ];
+
+    let backPos = [
+      // max
+      this.extents.back[0] + this.state.px,
+      this.extents.back[1] + this.state.py,
+      this.extents.back[2] + this.state.pz,
+    ];
+
+    let value =
+      (cubeExtent.min[0] >= frontPos[0] &&
+        cubeExtent.min[0] <= backPos[0] &&
+        cubeExtent.min[1] >= frontPos[1] &&
+        cubeExtent.min[1] <= backPos[1] &&
+        cubeExtent.min[2] >= frontPos[2] &&
+        cubeExtent.min[2] <= backPos[2]) ||
+      (cubeExtent.max[0] >= frontPos[0] &&
+        cubeExtent.max[0] <= backPos[0] &&
+        cubeExtent.max[1] >= frontPos[1] &&
+        cubeExtent.max[1] <= backPos[1] &&
+        cubeExtent.max[2] >= frontPos[2] &&
+        cubeExtent.max[2] <= backPos[2]);
+
+
+
+    return value;
+  }
   // do a physic step of the car (delta-t constant)
 
   doStep(fly) {
@@ -214,12 +255,21 @@ class Car {
         // fly
         if (this.state.py < maxHeight) {
           // until it reaches the max height
-          vym = this.state.vy + yAdd;
+
+          vym = this.state.fluctuate
+            ? this.state.vy + fluctuateValues[0]
+            : this.state.vy + yAdd;
         } else {
+          // it is fluctuating
           // handle this
-          vym = 0;
+          this.state.fluctuate = true;
+
+          vym = -fluctuateValues[1];
+          // fluctuate = true
+          // vym = 0;
         }
       }
+
 
       // steeling handler (based on keys set to true)
       if (this.keys[2]) this.state.steering -= speedSteering; //a

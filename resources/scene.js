@@ -67,26 +67,31 @@ class Scene {
     this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car);
 
     // only one cube
-    this.cube = await (await this._loadParts(path, cubeFile, false)).parts;
+    let cubeRes = await this._loadParts(path, cubeFile, true);
+    this.cubeTranslation = [0, 0, 0];
+
+    this.cube = cubeRes.parts;
+    this.cubeExtents = cubeRes.extents;
+
     this.changePositionCube();
   }
 
   changePositionCube() {
-    let possibleY = [0.5, 2];
+    let possibleY = [0.5, 3];
 
-    let translationValues = [
+    this.cubeTranslation = [
       utils.getRandomArbitrary(
-        this.groundExtents.min[0],
-        this.groundExtents.max[0]
+        this.groundExtents.min[0] + 2,
+        this.groundExtents.max[0] - 2
       ),
       possibleY[Math.floor(Math.random() * 2)],
       utils.getRandomArbitrary(
-        this.groundExtents.min[2],
-        this.groundExtents.max[2]
+        this.groundExtents.min[2] + 2,
+        this.groundExtents.max[2] - 2
       ),
     ];
 
-    let matrix = m4.translation(...translationValues);
+    let matrix = m4.translation(...this.cubeTranslation);
 
     for (let { _, uniforms } of this.cube) {
       uniforms.u_world = matrix;
@@ -140,6 +145,19 @@ class Scene {
     }
 
     this.moveCube();
+
+    let minCube = this.cubeExtents.min.map(
+      (value, index) => value + this.cubeTranslation[index]
+    );
+
+    let maxCube = this.cubeExtents.max.map(
+      (value, index) => value + this.cubeTranslation[index]
+    );
+
+    if (this.car.collideWithTheCube({ min: minCube, max: maxCube })) {
+      this.changePositionCube();
+      this.controlPanel.addCube();
+    }
 
     for (let { parts, uniforms } of [
       ...this.ground,

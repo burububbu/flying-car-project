@@ -140,7 +140,7 @@ function parseMTL(text) {
       materials[unparsedArgs] = material;
     },
     Ns: (parts, _) => {
-      material.shininess = parseFloat(400);
+      material.shininess = parts.map(parseFloat);
     },
     Ka: (parts, _) => {
       material.ambient = parts.map(parseFloat);
