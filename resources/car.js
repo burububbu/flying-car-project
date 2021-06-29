@@ -49,14 +49,14 @@ class Car {
 
     this.extents = {
       back: [
-        Number.POSITIVE_INFINITY,
-        Number.POSITIVE_INFINITY,
-        Number.POSITIVE_INFINITY,
+        Number.NEGATIVE_INFINITY,
+        Number.NEGATIVE_INFINITY,
+        Number.NEGATIVE_INFINITY,
       ],
       front: [
-        Number.NEGATIVE_INFINITY,
-        Number.NEGATIVE_INFINITY,
-        Number.NEGATIVE_INFINITY,
+        Number.POSITIVE_INFINITY,
+        Number.POSITIVE_INFINITY,
+        Number.POSITIVE_INFINITY,
       ],
     }; // min and max value (a sort of rectangle that represent the car)
 
@@ -118,11 +118,11 @@ class Car {
     // compute global min and max (with 0 as origin) (then we have to sum to px  py and pz)
     for (let { min, max } of extents) {
       min.forEach((value, ind) => {
-        if (this.extents.front[ind] < value) this.extents.front[ind] = value;
+        if (this.extents.front[ind] > value) this.extents.front[ind] = value;
       });
 
       max.forEach((value, ind) => {
-        if (this.extents.back[ind] > value) this.extents.back[ind] = value;
+        if (this.extents.back[ind] < value) this.extents.back[ind] = value;
       });
     }
 
@@ -172,14 +172,10 @@ class Car {
     // sia la z min che maz devono essere comprese tra limits.z min e max
 
     let value =
-      this.limits.min[0] < frontPos[0] &&
-      frontPos[0] < this.limits.max[0] &&
-      this.limits.min[2] < frontPos[1] &&
-      frontPos[1] < this.limits.max[2] &&
-      this.limits.min[0] < backPos[0] &&
-      backPos[0] < this.limits.max[0] &&
-      this.limits.min[2] < backPos[1] &&
-      backPos[1] < this.limits.max[2];
+      this.limits.min[0] <= Math.min(frontPos[0], backPos[0]) &&
+      this.limits.max[0] >= Math.max(frontPos[0], backPos[0]) &&
+      this.limits.min[2] <= Math.min(frontPos[1], backPos[1]) &&
+      this.limits.max[2] >= Math.max(frontPos[1], backPos[1]);
 
     // let value =
     //   this.limits.min[0] < frontPos[0] < this.limits.max[0] &&
