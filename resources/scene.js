@@ -66,7 +66,31 @@ class Scene {
 
     this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car);
 
-    //TODO cubeFile
+    // only one cube
+    this.cube = await (await this._loadParts(path, cubeFile, false)).parts;
+    this.changePositionCube();
+  }
+
+  changePositionCube() {
+    let possibleY = [0.5, 2];
+
+    let translationValues = [
+      utils.getRandomArbitrary(
+        this.groundExtents.min[0],
+        this.groundExtents.max[0]
+      ),
+      possibleY[Math.floor(Math.random() * 2)],
+      utils.getRandomArbitrary(
+        this.groundExtents.min[2],
+        this.groundExtents.max[2]
+      ),
+    ];
+
+    let matrix = m4.translation(...translationValues);
+
+    for (let { _, uniforms } of this.cube) {
+      uniforms.u_world = matrix;
+    }
   }
 
   // obj file must be in a folder with the same name
@@ -121,6 +145,7 @@ class Scene {
       ...this.ground,
       ...this.background,
       ...this.car.carSections.flat(),
+      ...this.cube,
     ]) {
       // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
       webglUtils.setBuffersAndAttributes(

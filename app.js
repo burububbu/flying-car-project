@@ -44,9 +44,10 @@ async function main() {
   await scene.loadScene(
     "./obj/", // path
     "terrain", // ground
+
     "", // background
     "DeLorean", // car
-    "", // object
+    "Cube", // object
     canvas
   );
 

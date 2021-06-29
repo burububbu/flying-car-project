@@ -58,4 +58,15 @@ function getGeometriesExtents(geometries) {
   return { min, max };
 }
 
-export { loadText, degToRad, radToDeg, loadOBJ, getGeometriesExtents };
+function getRandomArbitrary(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+export {
+  loadText,
+  degToRad,
+  radToDeg,
+  loadOBJ,
+  getGeometriesExtents,
+  getRandomArbitrary,
+};
