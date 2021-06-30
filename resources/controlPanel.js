@@ -2,6 +2,14 @@
 // car movement handled directly y the car
 
 // has the camera object
+
+/*
+black: i can use this functionality but i have not activate it
+grey: i can't use the functionality
+green: i have activated the functionality
+*/
+const colors = ["black", "grey", "green"];
+
 class ControlPanel {
   // maybe main canvas isn't useful, use window
   constructor(controlCanvas, camera, car) {
@@ -24,22 +32,30 @@ class ControlPanel {
     this._activeListeners();
 
     this.ctx = controlCanvas.getContext("2d");
-    this.ctx.font = "16px Arial";
+    this.title = "Flying car project";
+    this.cubesText = "Cubes: 0";
+
+    this.shortcuts = [
+      { text: "W A S D: move the car", color: 0 },
+      { text: "F: camera follows the car", color: 0 },
+      { text: "R: rotate the camera with the car", color: 0 },
+      { text: "Y: fly (active if car is stopped)", color: 0 },
+    ];
   }
 
   _activeListeners() {
     window.addEventListener("keydown", (e) => {
       switch (e.key) {
         case "f":
-          console.log("ao");
           //   this.cameraSettings.follow = !this.cameraSettings.follow;
           this.camera.followTarget = !this.camera.followTarget;
           this.camera.rotateWithTarget = false;
           break;
 
         case "r":
-          if (this.camera.followTarget)
+          if (this.camera.followTarget) {
             this.camera.rotateWithTarget = !this.camera.rotateWithTarget;
+          }
           break;
 
         case "y":
@@ -47,6 +63,10 @@ class ControlPanel {
             this.carSettings.fly = !this.carSettings.fly;
           if (!this.carSettings.fly) this.car.state.fluctuate = false;
 
+          break;
+
+        case "p":
+          // this.camera.setFirstPerson(this.car.getFirstPerson());
           break;
 
         default:
@@ -57,17 +77,63 @@ class ControlPanel {
   }
 
   addCube() {
-    this.cubes += 1;
-    if (this.cubes == 5) {
-      console.log("you win");
-    }
+    this.cubesText =
+      ++this.cubes == 10 ? "Cubes: 10. YOU WIN!" : "Cubes: " + this.cubes;
   }
 
   // different if is on the phone or pc
   drawPanel() {
+    // update colors
+    this._updateColors();
+
     // Clear the 2D canvas
+    let offset = 60; // on y
+
     this.ctx.clearRect(10, 10, this.ctx.canvas.width, this.ctx.canvas.height);
-    this.ctx.fillText("FLYING CAR PROJECT", 10, 10);
+    // draw only if something has changed
+    // if (changed){}
+
+    // title
+    this.ctx.font = "20px Arial";
+    this.ctx.strokeText(this.title, 10, 30, 200);
+
+    // shortcuts
+    this.ctx.font = "17px Arial";
+    this.ctx.fillStyle = "blue";
+    this.ctx.fillText("SHORTCUTS:", 10, offset, 200);
+
+    this.ctx.font = "15px Arial";
+    this.shortcuts.forEach(({ text, color }) => {
+      this.ctx.fillStyle = colors[color];
+      offset += 20;
+      this.ctx.fillText(text, 10, offset, 200);
+    });
+
+    // cubes
+    this.ctx.font = "17px Arial";
+    this.ctx.fillStyle = "blue";
+
+    offset += 40;
+    this.ctx.fillText(this.cubesText, 10, offset, 200);
+  }
+
+  _updateColors() {
+    // f(ollow)
+    this.shortcuts[1].color = this.camera.followTarget ? 2 : 0;
+
+    // r(otate)
+    this.shortcuts[2].color = this.camera.followTarget
+      ? this.camera.rotateWithTarget
+        ? 2
+        : 0
+      : 1;
+
+    //(fl)y
+    this.shortcuts[3].color = this.car.isStopped()
+      ? this.carSettings.fly
+        ? 2
+        : 0
+      : 1; // grey
   }
 }
 
