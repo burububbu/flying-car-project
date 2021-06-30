@@ -1,5 +1,11 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
 canvas {
-  border: solid 1pt;
-  width: 1500;
-  height: 800;
+  width: 100%;
+  height: 100%;
 }

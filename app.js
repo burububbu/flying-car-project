@@ -6,7 +6,7 @@ import { Scene } from "./resources/scene.js";
 
 // data useful for the computing of the view
 
-let lightPosition = [0, 100, 0];
+let lightPosition = [0, 30, 0];
 
 // set theta and phi to 0 because we are on z axis
 let cameraSettings = {
