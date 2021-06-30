@@ -19,11 +19,10 @@ let setView = {
 // the scene shares a unique programInfo
 class Scene {
   // cube to collect = [cube1, cube2.]
-  constructor(gl, programInfo, lightPosition, cam, canvas, controlCanvas) {
+  constructor(gl, programInfo, lightPosition, cam, canvas) {
     // create camera
     this.camera = new Camera(cam.D, cam.theta, cam.phi, cam.up, cam.target);
     this.camera.activeListeners(canvas);
-
     this.gl = gl;
     this.programInfo = programInfo;
 
@@ -64,7 +63,12 @@ class Scene {
 
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
 
-    this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car);
+    this.controlPanel = new ControlPanel(
+      controlCanvas,
+
+      this.camera,
+      this.car
+    );
 
     // only one cube
     let cubeRes = await this._loadParts(path, cubeFile, true);
@@ -124,8 +128,12 @@ class Scene {
 
   render() {
     webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
+    webglUtils.resizeCanvasToDisplaySize(this.controlPanel.ctx.canvas);
+
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
     this.gl.enable(this.gl.DEPTH_TEST);
+
+    this.controlPanel.drawPanel();
 
     this.gl.useProgram(this.programInfo.program); // TO SET
 

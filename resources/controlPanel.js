@@ -5,15 +5,10 @@
 class ControlPanel {
   // maybe main canvas isn't useful, use window
   constructor(controlCanvas, camera, car) {
-    this.controlCanvas = controlCanvas;
+    // only useful thing
 
     this.camera = camera;
     this.car = car;
-
-    // this.cameraSettings = {
-    //   follow: false,
-    //   rotate: false,
-    // };
 
     this.carSettings = {
       number: 0,
@@ -27,12 +22,16 @@ class ControlPanel {
     this.cubes = 0;
 
     this._activeListeners();
+
+    this.ctx = controlCanvas.getContext("2d");
+    this.ctx.font = "16px Arial";
   }
 
   _activeListeners() {
     window.addEventListener("keydown", (e) => {
       switch (e.key) {
         case "f":
+          console.log("ao");
           //   this.cameraSettings.follow = !this.cameraSettings.follow;
           this.camera.followTarget = !this.camera.followTarget;
           this.camera.rotateWithTarget = false;
@@ -62,6 +61,13 @@ class ControlPanel {
     if (this.cubes == 5) {
       console.log("you win");
     }
+  }
+
+  // different if is on the phone or pc
+  drawPanel() {
+    // Clear the 2D canvas
+    this.ctx.clearRect(10, 10, this.ctx.canvas.width, this.ctx.canvas.height);
+    this.ctx.fillText("FLYING CAR PROJECT", 10, 10);
   }
 }
 

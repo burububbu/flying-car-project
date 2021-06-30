@@ -22,6 +22,8 @@ async function main() {
   const canvas = document.getElementById("canvas");
   const gl = canvas.getContext("webgl");
 
+  const panelCanvas = document.getElementById("controlPanel");
+
   if (!gl) {
     console.log("WebGL is not available");
     return;
@@ -41,6 +43,7 @@ async function main() {
 
   // create scene
   let scene = new Scene(gl, programInfo, lightPosition, cameraSettings, canvas);
+
   await scene.loadScene(
     "./obj/", // path
     "terrain", // ground
@@ -48,7 +51,7 @@ async function main() {
     "", // background
     "DeLorean", // car
     "Cube", // object
-    canvas
+    panelCanvas
   );
 
   scene.render();
