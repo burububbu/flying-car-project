@@ -60,6 +60,76 @@ export function createTexture(gl, source) {
   return texture;
 }
 
+export function createCubeMapTexture(gl, path) {
+  let texture = gl.createTexture();
+
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+
+  const faceInfos = [
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+      src: path + "/pos-x.png",
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+      src: path + "/neg-x.png",
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+      src: path + "/pos-y.png",
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+      src: path + "/neg-y.png",
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+      src: path + "/pos-z.png",
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+      src: path + "/neg-z.png",
+    },
+  ];
+
+  faceInfos.forEach((faceInfo) => {
+    let target = faceInfo.target;
+    let src = faceInfo.src;
+
+    // upload the canvas to the cubemap
+    // setup each face so it's immediately renderable
+    gl.texImage2D(
+      target,
+      0,
+      gl.RGBA,
+      1024,
+      1024,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      null
+    ); // default
+
+    let image = new Image();
+    image.src = src;
+
+    image.addEventListener("load", () => {
+      // Now that the image has loaded make copy it to the texture.
+      gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+      gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+    });
+  });
+
+  gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+  gl.texParameteri(
+    gl.TEXTURE_CUBE_MAP,
+    gl.TEXTURE_MIN_FILTER,
+    gl.LINEAR_MIPMAP_LINEAR
+  );
+  return texture;
+}
+
 // necessary because mipmaps are not handled well for not 2-power images by webgl
 export function _isPowerOf2(number) {
   return (number & (number - 1)) === 0;
@@ -182,6 +252,36 @@ export function getParts(gl, obj, materials, defaultMaterial) {
       uniforms: { u_world: m4.identity() },
     };
   });
+}
+
+export function getDefault(gl) {
+  let defaultTextures = {
+    defaultWhite: create1PixelTexture(gl, [255, 255, 255, 255]),
+    defaultNormal: create1PixelTexture(gl, [127, 127, 255, 0]),
+  };
+
+  let defaultMaterial = {
+    diffuseMap: defaultTextures.defaultWhite,
+    normalMap: defaultTextures.defaultNormal,
+    specularMap: defaultTextures.defaultWhite,
+    emissiveMap: defaultTextures.defaultWhite,
+    diffuse: [1, 1, 1],
+    ambient: [1, 1, 1],
+    specular: [1, 1, 1],
+    shininess: 200,
+    opacity: 1,
+  };
+
+  return { textures: defaultTextures, materials: defaultMaterial };
+}
+
+export function getQuad() {
+  return {
+    position: {
+      numComponents: 2,
+      data: new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+    },
+  };
 }
 
 // for a obj vehicle, share the textures among wheels

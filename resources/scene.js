@@ -4,183 +4,59 @@ import { Camera } from "./camera.js";
 import { ControlPanel } from "./controlPanel.js";
 import { Car } from "./car.js";
 import {
-  create1PixelTexture,
+  createCubeMapTexture,
+  getDefault,
   getParts,
+  getQuad,
   loadTextures,
 } from "./customGlUtils.js";
 import * as utils from "./utils.js";
 
-let setView = {
+const setView = {
   zNear: 1,
   zFar: 4000,
   fieldOfView: 60,
 };
 
-// the scene shares a unique programInfo
 class Scene {
-  // cube to collect = [cube1, cube2.]
   constructor(gl, programInfo, programInfoSkybox, lightPosition, cam, canvas) {
     // create camera
     this.camera = new Camera(cam.D, cam.theta, cam.phi, cam.up, cam.target);
     this.camera.activeListeners(canvas);
+
     this.gl = gl;
 
+    // set programInfos
     this.programInfo = programInfo;
     this.programInfoSkybox = programInfoSkybox;
 
-    this._setDefault(); // initialize defaults
+    // initialize defaults
+    this.defaults = getDefault(this.gl);
 
-    this.lightPosition = lightPosition; // [...lightPosition] if more than one light
+    this.lightPosition = lightPosition;
   }
 
+  // load scene  objects
   async loadScene(
     path, // ./obj/
+
     groundFile, // terrain -> terrain/terrain.obj
-    backgroundFolder, //  []
-    carFile, // [vehicle, front wheels, back wheels]
+    backgroundFolder, // containing the skybox images
+    carFile,
     cubeFile,
+
     controlCanvas
   ) {
-    // personal uniforms -> u_world = identity()
-    let groundRes = await this._loadParts(path, groundFile, true);
+    this._loadBackground(path + backgroundFolder);
 
-    this.ground = groundRes.parts;
-    this.groundExtents = groundRes.extents; // i'm only interested in x and z
-
-    this.background = this.loadBackground(path + backgroundFolder);
-    // this.background = await (
-    //   await this._loadParts(path, groundFile, false)
-    // ).parts;
-
-    this.car = new Car();
-    await this.car.load(
-      this.gl,
-      path + carFile + "/",
-      carFile,
-      this.programInfo
-    );
-    this.car.loadLimits(this.groundExtents);
-
-    // true ud pc, false if phone  tablet
-    this.car.activeListeners();
+    await this._loadGround(path, groundFile);
+    await this._loadCar(path, carFile);
+    await this._loadCube(path, cubeFile);
 
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
 
-    this.controlPanel = new ControlPanel(
-      controlCanvas,
-
-      this.camera,
-      this.car
-    );
-
-    // only one cube
-    let cubeRes = await this._loadParts(path, cubeFile, true);
-    this.cubeTranslation = [0, 0, 0];
-
-    this.cube = cubeRes.parts;
-    this.cubeExtents = cubeRes.extents;
-
-    this.changePositionCube();
-  }
-
-  // create texture with photos in the folder
-  loadBackground(path) {
-    // use a different shader because here we can avoid all matrices transformations
-
-    // create bufferInfo for the quad that fill the canvas
-    let array = {
-      position: {
-        numComponents: 2,
-        data: new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
-      },
-    };
-
-    let bufferInfoQuad = webglUtils.createBufferInfoFromArrays(this.gl, array);
-
-    // now create the texture
-    let texture = this.gl.createTexture();
-
-    this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
-
-    const faceInfos = [
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-        src: path + "/pos-x.png",
-      },
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
-        src: path + "/neg-x.png",
-      },
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
-        src: path + "/pos-y.png",
-      },
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-        src: path + "/neg-y.png",
-      },
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
-        src: path + "/pos-z.png",
-      },
-      {
-        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
-        src: path + "/neg-z.png",
-      },
-    ];
-
-    faceInfos.forEach((faceInfo) => {
-      let target = faceInfo.target;
-      let src = faceInfo.src;
-
-      console.log(src);
-
-      // upload the canvas to the cubemap
-      // setup each face so it's immediately renderable
-      this.gl.texImage2D(
-        target,
-        0,
-        this.gl.RGBA,
-        1024,
-        1024,
-        0,
-        this.gl.RGBA,
-        this.gl.UNSIGNED_BYTE,
-        null
-      ); // default
-
-      let image = new Image();
-      image.src = src;
-
-      image.addEventListener("load", () => {
-        // Now that the image has loaded make copy it to the texture.
-        this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
-        this.gl.texImage2D(
-          target,
-          0,
-          this.gl.RGBA,
-          this.gl.RGBA,
-          this.gl.UNSIGNED_BYTE,
-          image
-        );
-        this.gl.generateMipmap(this.gl.TEXTURE_CUBE_MAP);
-      });
-    });
-
-    this.gl.generateMipmap(this.gl.TEXTURE_CUBE_MAP);
-    this.gl.texParameteri(
-      this.gl.TEXTURE_CUBE_MAP,
-      this.gl.TEXTURE_MIN_FILTER,
-      this.gl.LINEAR_MIPMAP_LINEAR
-    );
-
-    return {
-      bufferInfo: bufferInfoQuad,
-      uniforms: {
-        u_viewDirectionProjectionInverse: m4.identity(),
-        u_skybox: texture,
-      },
-    };
+    // load control panel
+    this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car);
   }
 
   changePositionCube() {
@@ -219,10 +95,10 @@ class Scene {
       extents = utils.getGeometriesExtents(obj.geometries);
     }
 
-    loadTextures(this.gl, materials, realpath, this.defaultTextures);
+    loadTextures(this.gl, materials, realpath, this.defaults.textures);
 
     return {
-      parts: getParts(this.gl, obj, materials, this.defaultMaterial),
+      parts: getParts(this.gl, obj, materials, this.defaults.materials),
       extents: extents,
     };
     // uniforms:
@@ -355,27 +231,53 @@ class Scene {
     return m4.inverse(viewDirectionProjection);
   }
 
-  // calc shred uniforms
+  async _loadGround(path, groundFile) {
+    let groundRes = await this._loadParts(path, groundFile, true);
+    this.ground = groundRes.parts;
+    this.groundExtents = groundRes.extents; // i'm only interested in x and z
+  }
 
-  // for each object draw and compute personal uniforms
+  // path -> folder with photos
+  _loadBackground(path) {
+    // create bufferInfo for a quad that fill the canvas. It's already in clip space.
+    let bufferInfoQuad = webglUtils.createBufferInfoFromArrays(
+      this.gl,
+      getQuad()
+    );
 
-  _setDefault() {
-    this.defaultTextures = {
-      defaultWhite: create1PixelTexture(this.gl, [255, 255, 255, 255]),
-      defaultNormal: create1PixelTexture(this.gl, [127, 127, 255, 0]),
+    this.background = {
+      bufferInfo: bufferInfoQuad,
+      uniforms: {
+        u_viewDirectionProjectionInverse: m4.identity(),
+        u_skybox: createCubeMapTexture(this.gl, path),
+      },
     };
+  }
 
-    this.defaultMaterial = {
-      diffuseMap: this.defaultTextures.defaultWhite,
-      normalMap: this.defaultTextures.defaultNormal,
-      specularMap: this.defaultTextures.defaultWhite,
-      emissiveMap: this.defaultTextures.defaultWhite,
-      diffuse: [1, 1, 1],
-      ambient: [1, 1, 1],
-      specular: [1, 1, 1],
-      shininess: 200,
-      opacity: 1,
-    };
+  async _loadCar(path, carFile) {
+    this.car = new Car();
+
+    await this.car.load(
+      this.gl,
+      path + carFile + "/",
+      carFile,
+      this.programInfo
+    );
+
+    this.car.loadLimits(this.groundExtents); // load terrain limits, the car can't cross them;
+
+    // true ud pc, false if phone or tablet
+    this.car.activeListeners();
+  }
+
+  async _loadCube(path, cubeFile) {
+    this.cubeTranslation = [0, 0, 0]; // initialize first translation
+
+    let cubeRes = await this._loadParts(path, cubeFile, true);
+    this.cube = cubeRes.parts;
+    this.cubeExtents = cubeRes.extents;
+
+    this.changePositionCube();
   }
 }
 
