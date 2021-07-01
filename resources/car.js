@@ -66,6 +66,8 @@ class Car {
 
     this.carSections = await this._loadParts(gl, path, filename);
 
+    this.fly = false;
+
     // internal car state, modified through time by the doStep method
     this.state = {
       px: 0, // position
@@ -168,8 +170,6 @@ class Car {
       this.extents.back[2] + this.state.pz,
     ];
 
-
-
     // sia la z min che maz devono essere comprese tra limits.z min e max
     // sia la z min che maz devono essere comprese tra limits.z min e max
 
@@ -223,13 +223,11 @@ class Car {
         cubeExtent.max[2] >= frontPos[2] &&
         cubeExtent.max[2] <= backPos[2]);
 
-
-
     return value;
   }
   // do a physic step of the car (delta-t constant)
 
-  doStep(fly) {
+  doStep() {
     // se ci sono limiti la macchina sta andando fuori, reset della posizione a [0,0,0]
     // check limits only for x and z
 
@@ -247,7 +245,7 @@ class Car {
       vxm = +cosf * this.state.vx - sinf * this.state.vz;
       vzm = +sinf * this.state.vx + cosf * this.state.vz;
 
-      if (!fly) {
+      if (!this.fly) {
         if (this.state.py > 0) {
           vym = this.state.vy - yAdd;
         } else vym = 0;
@@ -269,7 +267,6 @@ class Car {
           // vym = 0;
         }
       }
-
 
       // steeling handler (based on keys set to true)
       if (this.keys[2]) this.state.steering -= speedSteering; //a
@@ -302,7 +299,7 @@ class Car {
       this.state.py += this.state.vy;
       this.state.pz += this.state.vz;
 
-      if (fly) {
+      if (this.fly) {
         if (this.state.zRotate < 30) this.state.zRotate += speedRotating;
       } else {
         if (this.state.zRotate > 0) {
@@ -310,7 +307,7 @@ class Car {
         } else this.state.zRotate = 0;
       }
 
-      this._updateMatrices(fly);
+      this._updateMatrices();
     }
   }
 
@@ -332,8 +329,8 @@ class Car {
     return [this.state.px, this.state.py, this.state.pz];
   }
 
-  _updateMatrices(fly) {
-    if (!fly) {
+  _updateMatrices() {
+    if (!this.fly) {
       // base matrix (relative to the body)
       let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
       matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));

@@ -17,16 +17,6 @@ class ControlPanel {
 
     this.camera = camera;
     this.car = car;
-
-    this.carSettings = {
-      number: 0,
-      fly: false,
-    };
-
-    this.groundSettings = {
-      number: 0,
-    };
-
     this.cubes = 0;
 
     this._activeListeners();
@@ -59,9 +49,8 @@ class ControlPanel {
           break;
 
         case "y":
-          if (this.car.isStopped())
-            this.carSettings.fly = !this.carSettings.fly;
-          if (!this.carSettings.fly) this.car.state.fluctuate = false;
+          if (this.car.isStopped()) this.car.fly = !this.car.fly;
+          if (!this.car.fly) this.car.state.fluctuate = false;
 
           break;
 
@@ -129,11 +118,7 @@ class ControlPanel {
       : 1;
 
     //(fl)y
-    this.shortcuts[3].color = this.car.isStopped()
-      ? this.carSettings.fly
-        ? 2
-        : 0
-      : 1; // grey
+    this.shortcuts[3].color = this.car.isStopped() ? (this.car.fly ? 2 : 0) : 1; // grey
   }
 }
 
