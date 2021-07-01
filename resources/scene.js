@@ -12,11 +12,13 @@ import {
 } from "./customGlUtils.js";
 import * as utils from "./utils.js";
 
+// constant values
 const setView = {
   zNear: 1,
   zFar: 4000,
   fieldOfView: 60,
 };
+const possibleY = [0.5, 3];
 
 class Scene {
   constructor(gl, programInfo, programInfoSkybox, lightPosition, cam, canvas) {
@@ -59,9 +61,56 @@ class Scene {
     this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car);
   }
 
-  changePositionCube() {
-    let possibleY = [0.5, 3];
+  async _loadGround(path, groundFile) {
+    let groundRes = await this._loadParts(path, groundFile, true);
+    this.ground = groundRes.parts;
+    this.groundExtents = groundRes.extents; // i'm only interested in x and z
+  }
 
+  // path -> folder with photos
+  _loadBackground(path) {
+    // create bufferInfo for a quad that fill the canvas. It's already in clip space.
+    let bufferInfoQuad = webglUtils.createBufferInfoFromArrays(
+      this.gl,
+      getQuad()
+    );
+
+    this.background = {
+      bufferInfo: bufferInfoQuad,
+      uniforms: {
+        u_viewDirectionProjectionInverse: m4.identity(),
+        u_skybox: createCubeMapTexture(this.gl, path),
+      },
+    };
+  }
+
+  async _loadCar(path, carFile) {
+    this.car = new Car();
+
+    await this.car.load(
+      this.gl,
+      path + carFile + "/",
+      carFile,
+      this.programInfo
+    );
+
+    this.car.loadLimits(this.groundExtents); // load terrain limits, the car can't cross them;
+
+    // true ud pc, false if phone or tablet
+    this.car.activeListeners();
+  }
+
+  async _loadCube(path, cubeFile) {
+    this.cubeTranslation = [0, 0, 0]; // initialize first translation
+
+    let cubeRes = await this._loadParts(path, cubeFile, true);
+    this.cube = cubeRes.parts;
+    this.cubeExtents = cubeRes.extents;
+
+    this._changePositionCube();
+  }
+
+  _changePositionCube() {
     this.cubeTranslation = [
       utils.getRandomArbitrary(
         this.groundExtents.min[0] + 2,
@@ -76,6 +125,7 @@ class Scene {
 
     let matrix = m4.translation(...this.cubeTranslation);
 
+    // update all uniforms
     for (let { _, uniforms } of this.cube) {
       uniforms.u_world = matrix;
     }
@@ -87,15 +137,15 @@ class Scene {
     let extents = [];
 
     let [obj, materials] = await utils.loadOBJ(
-      realpath, // es: obj/terrain/
-      filename // terrain.obj
+      realpath, // ex: obj/car/
+      filename // car.obj
     );
 
     if (getExtents) {
       extents = utils.getGeometriesExtents(obj.geometries);
     }
 
-    loadTextures(this.gl, materials, realpath, this.defaults.textures);
+    loadTextures(this.gl, materials, realpath, this.defaults.textures); // modify materials, added textures
 
     return {
       parts: getParts(this.gl, obj, materials, this.defaults.materials),
@@ -146,7 +196,7 @@ class Scene {
     );
 
     if (this.car.collideWithTheCube({ min: minCube, max: maxCube })) {
-      this.changePositionCube();
+      this._changePositionCube();
       this.controlPanel.addCube();
     }
 
@@ -229,55 +279,6 @@ class Scene {
     let viewDirectionProjection = m4.multiply(projection, viewDirection);
 
     return m4.inverse(viewDirectionProjection);
-  }
-
-  async _loadGround(path, groundFile) {
-    let groundRes = await this._loadParts(path, groundFile, true);
-    this.ground = groundRes.parts;
-    this.groundExtents = groundRes.extents; // i'm only interested in x and z
-  }
-
-  // path -> folder with photos
-  _loadBackground(path) {
-    // create bufferInfo for a quad that fill the canvas. It's already in clip space.
-    let bufferInfoQuad = webglUtils.createBufferInfoFromArrays(
-      this.gl,
-      getQuad()
-    );
-
-    this.background = {
-      bufferInfo: bufferInfoQuad,
-      uniforms: {
-        u_viewDirectionProjectionInverse: m4.identity(),
-        u_skybox: createCubeMapTexture(this.gl, path),
-      },
-    };
-  }
-
-  async _loadCar(path, carFile) {
-    this.car = new Car();
-
-    await this.car.load(
-      this.gl,
-      path + carFile + "/",
-      carFile,
-      this.programInfo
-    );
-
-    this.car.loadLimits(this.groundExtents); // load terrain limits, the car can't cross them;
-
-    // true ud pc, false if phone or tablet
-    this.car.activeListeners();
-  }
-
-  async _loadCube(path, cubeFile) {
-    this.cubeTranslation = [0, 0, 0]; // initialize first translation
-
-    let cubeRes = await this._loadParts(path, cubeFile, true);
-    this.cube = cubeRes.parts;
-    this.cubeExtents = cubeRes.extents;
-
-    this.changePositionCube();
   }
 }
 
