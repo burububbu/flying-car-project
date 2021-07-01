@@ -18,7 +18,7 @@ class Camera {
     this.target = target;
 
     this.cartesianCoord = [0, 0, 0];
-    this.updateCartesianCoord();
+    this._updateCartesianCoord();
 
     // useful for camera moving
     this.lastPosition = [0, 0, 0];
@@ -32,7 +32,15 @@ class Camera {
     return m4.lookAt(this.cartesianCoord, this.target, this.up);
   }
 
-  updateCartesianCoord() {
+  update(target, rotation) {
+    // update target and rotation of the camera if requested
+    this.target = target;
+
+    if (this.rotateWithTarget) this.theta = degToRad(rotation);
+
+    this._updateCartesianCoord();
+  }
+  _updateCartesianCoord() {
     // x = old y
     // y = old z
     // z = old x
@@ -60,7 +68,7 @@ class Camera {
           ? (this.phi = phiCheck(this.phi, dr))
           : (this.phi = phiCheck(this.phi, -dr));
       }
-      this.updateCartesianCoord();
+      this._updateCartesianCoord();
 
       this.lastPosition = [event.pageX, event.pageY];
     };
@@ -80,7 +88,7 @@ class Camera {
     // zoom in zoom out
     canvas.addEventListener("wheel", (event) => {
       if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.01; // in this way
-      this.updateCartesianCoord();
+      this._updateCartesianCoord();
     });
   }
 }

@@ -61,6 +61,66 @@ class Scene {
     this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car);
   }
 
+  render() {
+    webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
+    webglUtils.resizeCanvasToDisplaySize(this.controlPanel.ctx.canvas);
+    this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+
+    // --------- draw the control panel --------------
+    this.controlPanel.drawPanel();
+
+    // ---- compute uniforms useful for both programInfos ---
+    let { sharedUniformsAll, sharedUniformsSkyBox } =
+      this._computeSharedUniforms();
+
+    // --------- draw all except the skybox ----------
+    this.gl.enable(this.gl.DEPTH_TEST);
+    this.gl.depthFunc(this.gl.LESS);
+    this.gl.useProgram(this.programInfo.program);
+    webglUtils.setUniforms(this.programInfo, sharedUniformsAll);
+
+    this.car.doStep(); // update car state
+
+    // update camera
+    if (this.camera.followTarget)
+      this.camera.update(this.car.getCenter(), this.car.state.facing + 180);
+
+    // update cube world matrix, handle collision with car
+    this._cubeHandler();
+
+    for (let { parts, uniforms } of [
+      ...this.ground,
+      ...this.car.carSections.flat(),
+      ...this.cube,
+    ]) {
+      webglUtils.setBuffersAndAttributes(
+        this.gl,
+        this.programInfo,
+        parts.bufferInfo
+      );
+
+      webglUtils.setUniforms(this.programInfo, uniforms, parts.material);
+      webglUtils.drawBufferInfo(this.gl, parts.bufferInfo);
+    }
+    //--------- draw the skybox -----------------
+
+    // let our quad pass the depth test at 1.0
+    this.gl.depthFunc(this.gl.LEQUAL);
+
+    this.gl.useProgram(this.programInfoSkybox.program);
+
+    webglUtils.setBuffersAndAttributes(
+      this.gl,
+      this.programInfoSkybox,
+      this.background.bufferInfo
+    );
+
+    webglUtils.setUniforms(this.programInfoSkybox, sharedUniformsSkyBox);
+    webglUtils.drawBufferInfo(this.gl, this.background.bufferInfo);
+
+    requestAnimationFrame(this.render.bind(this));
+  }
+
   async _loadGround(path, groundFile) {
     let groundRes = await this._loadParts(path, groundFile, true);
     this.ground = groundRes.parts;
@@ -155,99 +215,31 @@ class Scene {
     // programInfo:
   }
 
-  render() {
-    webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
-    webglUtils.resizeCanvasToDisplaySize(this.controlPanel.ctx.canvas);
-    this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-    this.controlPanel.drawPanel();
-
-    // -------------------------------- all -------------------
-    this.gl.enable(this.gl.DEPTH_TEST);
-    this.gl.depthFunc(this.gl.LESS);
-
-    this.gl.useProgram(this.programInfo.program); // TO SET
-
-    let viewDirectionProjection = this._computeAndSetSharedUniforms(
-      this.gl,
-      this.programInfo
-    );
-
-    // check if the car can fly, it have to be sopped
-
-    this.car.doStep(this.controlPanel.carSettings.fly);
-
-    if (this.camera.followTarget) {
-      this.camera.target = this.car.getCenter();
-
-      if (this.camera.rotateWithTarget)
-        this.camera.theta = utils.degToRad(this.car.state.facing + 180);
-
-      this.camera.updateCartesianCoord();
-    }
-
-    this.moveCube();
-
-    let minCube = this.cubeExtents.min.map(
-      (value, index) => value + this.cubeTranslation[index]
-    );
-
-    let maxCube = this.cubeExtents.max.map(
-      (value, index) => value + this.cubeTranslation[index]
-    );
-
-    if (this.car.collideWithTheCube({ min: minCube, max: maxCube })) {
-      this._changePositionCube();
-      this.controlPanel.addCube();
-    }
-
-    for (let { parts, uniforms } of [
-      ...this.ground,
-      ...this.car.carSections.flat(),
-      ...this.cube,
-    ]) {
-      // calls gl.bindBuffer, gl.enableVertexAttribArray, gl.vertexAttribPointer
-      webglUtils.setBuffersAndAttributes(
-        this.gl,
-        this.programInfo,
-        parts.bufferInfo
-      );
-      // calls gl.uniform
-
-      webglUtils.setUniforms(this.programInfo, uniforms, parts.material);
-      // calls gl.drawArrays or gl.drawElements
-      webglUtils.drawBufferInfo(this.gl, parts.bufferInfo);
-    }
-
-    //-------------------- background (has another programInfo)
-
-    // let our quad pass the depth test at 1.0
-    this.gl.depthFunc(this.gl.LEQUAL);
-
-    this.gl.useProgram(this.programInfoSkybox.program);
-
-    webglUtils.setBuffersAndAttributes(
-      this.gl,
-      this.programInfoSkybox,
-      this.background.bufferInfo
-    );
-
-    this.background.uniforms.u_viewDirectionProjectionInverse =
-      viewDirectionProjection;
-
-    webglUtils.setUniforms(this.programInfoSkybox, this.background.uniforms);
-    webglUtils.drawBufferInfo(this.gl, this.background.bufferInfo);
-    //---------------------------------------
-
-    requestAnimationFrame(this.render.bind(this));
-  }
-
-  moveCube() {
+  _cubeHandler() {
     for (let { _, uniforms } of this.cube) {
       uniforms.u_world = m4.yRotate(uniforms.u_world, utils.degToRad(1));
     }
+    let minValues = this.cubeExtents.min.map(
+      (value, index) => value + this.cubeTranslation[index]
+    );
+
+    let maxValues = this.cubeExtents.max.map(
+      (value, index) => value + this.cubeTranslation[index]
+    );
+
+    if (
+      this.car.collideWithTheCube({
+        min: minValues,
+        max: maxValues,
+      })
+    ) {
+      this._changePositionCube();
+      this.controlPanel.addCube();
+    }
   }
 
-  _computeAndSetSharedUniforms() {
+  _computeSharedUniforms() {
+    // (all)
     let projection = m4.perspective(
       utils.degToRad(setView.fieldOfView),
       this.gl.canvas.clientWidth / this.gl.canvas.clientHeight, //aspect
@@ -255,30 +247,33 @@ class Scene {
       setView.zFar
     );
 
-    // Make a view matrix from the camera matrix.
+    // Make a view matrix from the camera matrix. (all)
     let view = m4.inverse(this.camera.getMatrix());
 
-    // calc for classic program info
-    const sharedUniforms = {
-      u_lightPosition: this.lightPosition,
-      u_view: view,
-      u_projection: projection,
-      // u_viewWorldPosition: camera.getCartesianCoord(),
-      u_viewWorldPosition: this.camera.cartesianCoord,
-    };
-
-    webglUtils.setUniforms(this.programInfo, sharedUniforms);
-
-    // compute viewDirectionProjectionInverse matrix
+    // Make a viewDirectionProjectionInverse matrix (skybox)
     let viewDirection = m4.copy(view);
 
     viewDirection[12] = 0;
     viewDirection[13] = 0;
     viewDirection[14] = 0;
 
-    let viewDirectionProjection = m4.multiply(projection, viewDirection);
+    let viewDirectionProjectionInverse = m4.inverse(
+      m4.multiply(projection, viewDirection)
+    );
 
-    return m4.inverse(viewDirectionProjection);
+    // aggregate the uniforms
+    let sharedUniformsAll = {
+      u_lightPosition: this.lightPosition,
+      u_view: view,
+      u_projection: projection,
+      u_viewWorldPosition: this.camera.cartesianCoord,
+    };
+
+    let sharedUniformsSkyBox = {
+      u_viewDirectionProjectionInverse: viewDirectionProjectionInverse,
+    };
+
+    return { sharedUniformsAll, sharedUniformsSkyBox };
   }
 }
 
