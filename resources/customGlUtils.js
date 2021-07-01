@@ -104,6 +104,9 @@ export function createCubeMapTexture(gl, path) {
     image.addEventListener("load", () => {
       // Now that the image has loaded make copy it to the texture.
       gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+
       gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
       gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
     });
