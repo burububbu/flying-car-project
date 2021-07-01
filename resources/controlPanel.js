@@ -34,6 +34,7 @@ class ControlPanel {
   }
 
   _activeListeners() {
+    // shortcuts
     window.addEventListener("keydown", (e) => {
       switch (e.key) {
         case "f":
@@ -63,6 +64,20 @@ class ControlPanel {
           break;
       }
     });
+
+    // car handler
+    window.addEventListener("keydown", (e) => {
+      let ind = ["w", "s", "a", "d"].indexOf(e.key);
+
+      if (ind > -1) this.car.keys[ind] = true;
+    });
+
+    window.addEventListener("keyup", (e) => {
+      let ind = ["w", "s", "a", "d"].indexOf(e.key);
+      if (ind > -1) this.car.keys[ind] = false;
+    });
+
+    // camera handler in its class
   }
 
   addCube() {

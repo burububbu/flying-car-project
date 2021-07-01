@@ -2,8 +2,6 @@ import { degToRad } from "./utils.js";
 
 const rad360 = Math.PI * 2;
 const dr = degToRad(1.5); // if odd then change phi condition with newPhi + dr > 0 && newPhi <= Math.PI
-
-// class that represent the camera
 class Camera {
   constructor(D, theta, phi, up, target) {
     // spherical coords
@@ -23,8 +21,11 @@ class Camera {
     // useful for camera moving
     this.lastPosition = [0, 0, 0];
 
+    // handled by control panel
     this.followTarget = true;
     this.rotateWithTarget = true;
+
+    this._activeListeners();
   }
 
   // get camera matrix
@@ -35,16 +36,11 @@ class Camera {
   update(target, rotation) {
     // update target and rotation of the camera if requested
     this.target = target;
-
     if (this.rotateWithTarget) this.theta = degToRad(rotation);
-
     this._updateCartesianCoord();
   }
-  _updateCartesianCoord() {
-    // x = old y
-    // y = old z
-    // z = old x
 
+  _updateCartesianCoord() {
     this.cartesianCoord[0] =
       this.D * Math.sin(this.phi) * Math.sin(this.theta) + this.target[0]; // x (old y)
     this.cartesianCoord[1] = this.D * Math.cos(this.phi) + this.target[1]; // y (old z)
@@ -53,7 +49,7 @@ class Camera {
   }
 
   // active listeners useful to handle the zoom and camera moving
-  activeListeners(canvas) {
+  _activeListeners() {
     let moveHandler = (event) => {
       // mouse movement on x axis
       if (!this.rotateWithTarget && event.pageX !== this.lastPosition[0]) {
@@ -74,19 +70,19 @@ class Camera {
     };
 
     // user hold down the mouse
-    canvas.addEventListener("mousedown", (event) => {
+    window.addEventListener("mousedown", (event) => {
       // update current mouse position
       this.lastPosition = [event.pageX, event.pageY];
-      canvas.addEventListener("mousemove", moveHandler);
+      window.addEventListener("mousemove", moveHandler);
     });
 
     // user doesn't hold the mouse
-    canvas.addEventListener("mouseup", () =>
-      canvas.removeEventListener("mousemove", moveHandler)
+    window.addEventListener("mouseup", () =>
+      window.removeEventListener("mousemove", moveHandler)
     );
 
     // zoom in zoom out
-    canvas.addEventListener("wheel", (event) => {
+    window.addEventListener("wheel", (event) => {
       if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.01; // in this way
       this._updateCartesianCoord();
     });
@@ -96,22 +92,9 @@ class Camera {
 // phi have to be  0 < phi < pi
 function phiCheck(phi, dr) {
   let newPhi = phi + dr;
-
-  // maybe reset to if (newPhi + dr >= 0 && newPhi <= Math.PI)
-  if (newPhi + dr >= degToRad(30) && newPhi <= Math.PI / 2 - degToRad(5)) {
-    return newPhi;
-  } else return phi;
+  return newPhi + dr >= degToRad(30) && newPhi <= Math.PI / 2 - degToRad(5)
+    ? newPhi
+    : phi;
 }
 
 export { Camera };
-
-// canvas.addEventListener("touchstart", (event) => {
-//   // update current mouse position
-//   this.lastPosition = [event.pageX, event.pageY];
-
-//   canvas.addEventListener("touchmove", moveHandler);
-// });
-
-// canvas.addEventListener("touchend", () =>
-//   canvas.removeEventListener("touchmove", moveHandler)
-// );

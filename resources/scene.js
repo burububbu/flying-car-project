@@ -24,7 +24,6 @@ class Scene {
   constructor(gl, programInfo, programInfoSkybox, lightPosition, cam, canvas) {
     // create camera
     this.camera = new Camera(cam.D, cam.theta, cam.phi, cam.up, cam.target);
-    this.camera.activeListeners(canvas);
 
     this.gl = gl;
 
@@ -157,7 +156,7 @@ class Scene {
     this.car.loadLimits(this.groundExtents); // load terrain limits, the car can't cross them;
 
     // true ud pc, false if phone or tablet
-    this.car.activeListeners();
+    // this.car.activeListeners();
   }
 
   async _loadCube(path, cubeFile) {

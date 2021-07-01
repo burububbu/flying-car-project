@@ -311,20 +311,6 @@ class Car {
     }
   }
 
-  activeListeners(pc = true) {
-    if (pc) {
-      window.addEventListener("keydown", (e) => {
-        let ind = ["w", "s", "a", "d"].indexOf(e.key);
-        if (ind > -1) this.keys[ind] = true;
-      });
-
-      window.addEventListener("keyup", (e) => {
-        let ind = ["w", "s", "a", "d"].indexOf(e.key);
-        if (ind > -1) this.keys[ind] = false;
-      });
-    }
-  }
-
   getCenter() {
     return [this.state.px, this.state.py, this.state.pz];
   }
