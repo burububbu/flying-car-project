@@ -41,14 +41,26 @@ async function main() {
 
   let programInfo = webglUtils.createProgramInfo(gl, [vSrc, fSrc]);
 
+  // skybox program info
+  let vSrcSB = await utils.loadText("./shaders/vertexShaderSkybox.glsl");
+  let fSrcSB = await utils.loadText("./shaders/fragmentShaderSkybox.glsl");
+
+  let programInfoSkybox = webglUtils.createProgramInfo(gl, [vSrcSB, fSrcSB]);
+
   // create scene
-  let scene = new Scene(gl, programInfo, lightPosition, cameraSettings, canvas);
+  let scene = new Scene(
+    gl,
+    programInfo,
+    programInfoSkybox,
+    lightPosition,
+    cameraSettings,
+    canvas
+  );
 
   await scene.loadScene(
     "./obj/", // path
     "terrain", // ground
-
-    "", // background
+    "skybox", // background
     "DeLorean", // car
     "Cube", // object
     panelCanvas

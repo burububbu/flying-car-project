@@ -19,12 +19,14 @@ let setView = {
 // the scene shares a unique programInfo
 class Scene {
   // cube to collect = [cube1, cube2.]
-  constructor(gl, programInfo, lightPosition, cam, canvas) {
+  constructor(gl, programInfo, programInfoSkybox, lightPosition, cam, canvas) {
     // create camera
     this.camera = new Camera(cam.D, cam.theta, cam.phi, cam.up, cam.target);
     this.camera.activeListeners(canvas);
     this.gl = gl;
+
     this.programInfo = programInfo;
+    this.programInfoSkybox = programInfoSkybox;
 
     this._setDefault(); // initialize defaults
 
@@ -34,7 +36,7 @@ class Scene {
   async loadScene(
     path, // ./obj/
     groundFile, // terrain -> terrain/terrain.obj
-    backgroundFile,
+    backgroundFolder, //  []
     carFile, // [vehicle, front wheels, back wheels]
     cubeFile,
     controlCanvas
@@ -45,9 +47,10 @@ class Scene {
     this.ground = groundRes.parts;
     this.groundExtents = groundRes.extents; // i'm only interested in x and z
 
-    this.background = await (
-      await this._loadParts(path, groundFile, false)
-    ).parts;
+    this.background = this.loadBackground(path + backgroundFolder);
+    // this.background = await (
+    //   await this._loadParts(path, groundFile, false)
+    // ).parts;
 
     this.car = new Car();
     await this.car.load(
@@ -78,6 +81,106 @@ class Scene {
     this.cubeExtents = cubeRes.extents;
 
     this.changePositionCube();
+  }
+
+  // create texture with photos in the folder
+  loadBackground(path) {
+    // use a different shader because here we can avoid all matrices transformations
+
+    // create bufferInfo for the quad that fill the canvas
+    let array = {
+      position: {
+        numComponents: 2,
+        data: new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+      },
+    };
+
+    let bufferInfoQuad = webglUtils.createBufferInfoFromArrays(this.gl, array);
+
+    // now create the texture
+    let texture = this.gl.createTexture();
+
+    this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
+
+    const faceInfos = [
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+        src: path + "/pos-x.png",
+      },
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+        src: path + "/neg-x.png",
+      },
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+        src: path + "/pos-y.png",
+      },
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+        src: path + "/neg-y.png",
+      },
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+        src: path + "/pos-z.png",
+      },
+      {
+        target: this.gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+        src: path + "/neg-z.png",
+      },
+    ];
+
+    faceInfos.forEach((faceInfo) => {
+      let target = faceInfo.target;
+      let src = faceInfo.src;
+
+      console.log(src);
+
+      // upload the canvas to the cubemap
+      // setup each face so it's immediately renderable
+      this.gl.texImage2D(
+        target,
+        0,
+        this.gl.RGBA,
+        1024,
+        1024,
+        0,
+        this.gl.RGBA,
+        this.gl.UNSIGNED_BYTE,
+        null
+      ); // default
+
+      let image = new Image();
+      image.src = src;
+
+      image.addEventListener("load", () => {
+        // Now that the image has loaded make copy it to the texture.
+        this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, texture);
+        this.gl.texImage2D(
+          target,
+          0,
+          this.gl.RGBA,
+          this.gl.RGBA,
+          this.gl.UNSIGNED_BYTE,
+          image
+        );
+        this.gl.generateMipmap(this.gl.TEXTURE_CUBE_MAP);
+      });
+    });
+
+    this.gl.generateMipmap(this.gl.TEXTURE_CUBE_MAP);
+    this.gl.texParameteri(
+      this.gl.TEXTURE_CUBE_MAP,
+      this.gl.TEXTURE_MIN_FILTER,
+      this.gl.LINEAR_MIPMAP_LINEAR
+    );
+
+    return {
+      bufferInfo: bufferInfoQuad,
+      uniforms: {
+        u_viewDirectionProjectionInverse: m4.identity(),
+        u_skybox: texture,
+      },
+    };
   }
 
   changePositionCube() {
@@ -129,15 +232,19 @@ class Scene {
   render() {
     webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
     webglUtils.resizeCanvasToDisplaySize(this.controlPanel.ctx.canvas);
-
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-    this.gl.enable(this.gl.DEPTH_TEST);
-
     this.controlPanel.drawPanel();
+
+    // -------------------------------- all -------------------
+    this.gl.enable(this.gl.DEPTH_TEST);
+    this.gl.depthFunc(this.gl.LESS);
 
     this.gl.useProgram(this.programInfo.program); // TO SET
 
-    this._computeAndSetSharedUniforms(this.gl, this.programInfo);
+    let viewDirectionProjection = this._computeAndSetSharedUniforms(
+      this.gl,
+      this.programInfo
+    );
 
     // check if the car can fly, it have to be sopped
 
@@ -169,7 +276,6 @@ class Scene {
 
     for (let { parts, uniforms } of [
       ...this.ground,
-      ...this.background,
       ...this.car.carSections.flat(),
       ...this.cube,
     ]) {
@@ -180,10 +286,31 @@ class Scene {
         parts.bufferInfo
       );
       // calls gl.uniform
+
       webglUtils.setUniforms(this.programInfo, uniforms, parts.material);
       // calls gl.drawArrays or gl.drawElements
       webglUtils.drawBufferInfo(this.gl, parts.bufferInfo);
     }
+
+    //-------------------- background (has another programInfo)
+
+    // let our quad pass the depth test at 1.0
+    this.gl.depthFunc(this.gl.LEQUAL);
+
+    this.gl.useProgram(this.programInfoSkybox.program);
+
+    webglUtils.setBuffersAndAttributes(
+      this.gl,
+      this.programInfoSkybox,
+      this.background.bufferInfo
+    );
+
+    this.background.uniforms.u_viewDirectionProjectionInverse =
+      viewDirectionProjection;
+
+    webglUtils.setUniforms(this.programInfoSkybox, this.background.uniforms);
+    webglUtils.drawBufferInfo(this.gl, this.background.bufferInfo);
+    //---------------------------------------
 
     requestAnimationFrame(this.render.bind(this));
   }
@@ -205,10 +332,7 @@ class Scene {
     // Make a view matrix from the camera matrix.
     let view = m4.inverse(this.camera.getMatrix());
 
-    // let view = m4.inverse(
-    //   m4.lookAt(this.camera.cartesianCoord, [0, 0, 0], [0, 1, 0])
-    // );
-
+    // calc for classic program info
     const sharedUniforms = {
       u_lightPosition: this.lightPosition,
       u_view: view,
@@ -218,6 +342,17 @@ class Scene {
     };
 
     webglUtils.setUniforms(this.programInfo, sharedUniforms);
+
+    // compute viewDirectionProjectionInverse matrix
+    let viewDirection = m4.copy(view);
+
+    viewDirection[12] = 0;
+    viewDirection[13] = 0;
+    viewDirection[14] = 0;
+
+    let viewDirectionProjection = m4.multiply(projection, viewDirection);
+
+    return m4.inverse(viewDirectionProjection);
   }
 
   // calc shred uniforms
