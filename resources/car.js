@@ -1,34 +1,28 @@
 /*
 ORDER
 name         index
-"MainBody",
-"LFrontWheel", 0
-"RFrontWheel", 1
-"LBackWheel",  2
-"RBackWheel",  3
+"MainBody",    0
+"LFrontWheel", 1
+"RFrontWheel", 2
+"LBackWheel",  3
+"RBackWheel",  4
 */
 
-import {
-  create1PixelTexture,
-  getParts,
-  loadTextures,
-} from "./customGlUtils.js";
+import { getDefault, getParts, loadTextures } from "./customGlUtils.js";
 import * as utils from "./utils.js";
 
 // -------- some constant values used for the computing of steps
-const speedSteering = 3.4; // sterzo
+const speedSteering = 3.2; // sterzo
 const speedSteeringReturn = 0.93;
 const accMax = 0.0021; // max accelaration
 
-const speedRotating = 0.8;
+const speedRotating = 0.7;
 const maxHeight = 3;
-// const minHeight = 1.5;
 const yAdd = 0.001;
 
 const fluctuateValues = [0.0001, 0.01];
 
 // speed % mantained (= 1 -> no friction, << 1 high friction)
-// let frictions = [0.991, 0.8, 1.0]; here it's like ice
 // null friction on y
 const frictions = [0.8, 1, 0.991]; // if I change the friction on x, the car slides
 
@@ -38,7 +32,7 @@ const grip = 0.45; // how much the vehicle adapts to the steering
 
 class Car {
   async load(gl, path, filename) {
-    this._setDefault(gl);
+    this.defaults = getDefault(gl);
 
     this.centers = [
       [0, 0, 0],
@@ -59,12 +53,10 @@ class Car {
         Number.POSITIVE_INFINITY,
         Number.POSITIVE_INFINITY,
       ],
-    }; // min and max value (a sort of rectangle that represent the car)
+    }; // min and max value (the car is represented by a rectangle)
 
-    this.limits = undefined;
+    this.limits = undefined; // ground limits
     this.keys = [false, false, false, false];
-
-    this.carSections = await this._loadParts(gl, path, filename);
 
     this.fly = false;
 
@@ -85,10 +77,14 @@ class Car {
       zRotate: 0,
       fluctuate: false,
     };
+
+    // load car parts ["MainBody", "LFrontWheel", "RFrontWheel", "LBackWheel",  "RBackWheel"]
+    this.carSections = await this._loadParts(gl, path, filename);
   }
 
   async _loadParts(gl, path, filename) {
     let [obj, materials] = await utils.loadOBJ(path, filename);
+
     let carPartsObj = [];
 
     // filter car sections
@@ -130,10 +126,11 @@ class Car {
       });
     }
 
-    loadTextures(gl, materials, path, this.defaultTextures);
+    // load tectures in materials
+    loadTextures(gl, materials, path, this.defaults.textures);
 
     return carPartsObj.map((part) =>
-      getParts(gl, part, materials, this.defaultMaterial)
+      getParts(gl, part, materials, this.defaults.materials)
     );
   }
 
@@ -179,12 +176,6 @@ class Car {
       this.limits.min[2] <= Math.min(frontPos[1], backPos[1]) &&
       this.limits.max[2] >= Math.max(frontPos[1], backPos[1]);
 
-    // let value =
-    //   this.limits.min[0] < frontPos[0] < this.limits.max[0] &&
-    //   this.limits.min[2] < frontPos[1] < this.limits.max[2] &&
-    //   this.limits.min[0] < backPos[0] < this.limits.max[0] &&
-    //   this.limits.min[2] < backPos[1] < this.limits.max[2];
-
     return value;
   }
 
@@ -225,12 +216,10 @@ class Car {
 
     return value;
   }
+
   // do a physic step of the car (delta-t constant)
-
   doStep() {
-    // se ci sono limiti la macchina sta andando fuori, reset della posizione a [0,0,0]
     // check limits only for x and z
-
     if (this.limits && !this.isInside()) {
       this.state.px = 0;
       this.state.py = 0;
@@ -238,39 +227,19 @@ class Car {
     } else {
       let vxm, vym, vzm; // car space speed
 
-      // from worls da vel frame mondo a vel frame macchina
-      let cosf = Math.cos((this.state.facing * Math.PI) / 180.0);
-      let sinf = Math.sin((this.state.facing * Math.PI) / 180.0);
+      // from world da vel frame mondo a vel frame macchina
+      let modifiedFacing = (this.state.facing * Math.PI) / 180.0;
+      let cosf = Math.cos(modifiedFacing);
+      let sinf = Math.sin(modifiedFacing);
 
       vxm = +cosf * this.state.vx - sinf * this.state.vz;
+      vym = this._getVYM(); // different if the car is flying
       vzm = +sinf * this.state.vx + cosf * this.state.vz;
-
-      if (!this.fly) {
-        if (this.state.py > 0) {
-          vym = this.state.vy - yAdd;
-        } else vym = 0;
-      } else {
-        // fly
-        if (this.state.py < maxHeight) {
-          // until it reaches the max height
-
-          vym = this.state.fluctuate
-            ? this.state.vy + fluctuateValues[0]
-            : this.state.vy + yAdd;
-        } else {
-          // it is fluctuating
-          // handle this
-          this.state.fluctuate = true;
-
-          vym = -fluctuateValues[1];
-          // fluctuate = true
-          // vym = 0;
-        }
-      }
 
       // steeling handler (based on keys set to true)
       if (this.keys[2]) this.state.steering -= speedSteering; //a
       if (this.keys[3]) this.state.steering += speedSteering; //d
+
       this.state.steering *= speedSteeringReturn;
 
       if (this.keys[0]) vzm += accMax; // go ahead
@@ -299,16 +268,38 @@ class Car {
       this.state.py += this.state.vy;
       this.state.pz += this.state.vz;
 
+      // handle the wheels rotation
       if (this.fly) {
         if (this.state.zRotate < 30) this.state.zRotate += speedRotating;
       } else {
-        if (this.state.zRotate > 0) {
-          this.state.zRotate -= speedRotating;
-        } else this.state.zRotate = 0;
+        this.state.zRotate =
+          this.state.zRotate > 0 ? this.state.zRotate - speedRotating : 0;
       }
 
       this._updateMatrices();
     }
+  }
+
+  _getVYM() {
+    let toRet = 0;
+
+    if (this.fly) {
+      if (this.state.py < maxHeight) {
+        toRet = this.state.fluctuate
+          ? this.state.vy + fluctuateValues[0]
+          : this.state.vy + yAdd;
+      } else {
+        // it's fluctuating
+        this.state.fluctuate = true;
+        toRet = -fluctuateValues[1];
+      }
+    } else {
+      if (this.state.py > 0) {
+        toRet = this.state.vy - yAdd;
+      }
+    }
+
+    return toRet;
   }
 
   getCenter() {
@@ -316,179 +307,72 @@ class Car {
   }
 
   _updateMatrices() {
-    if (!this.fly) {
-      // base matrix (relative to the body)
-      let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
-      matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
-      // update body
-      this._updateAllWorldMatrices(0, matrix);
+    // base matrix (relative to the body)
+    let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
 
-      // L front wheel ind: 1
-      let temp_matrix = m4.copy(matrix);
-      // return to the initial position
-      temp_matrix = m4.translate(temp_matrix, ...this.centers[1]);
-      temp_matrix = m4.zRotate(
-        temp_matrix,
-        -utils.degToRad(this.state.zRotate)
-      );
-      temp_matrix = m4.yRotate(
-        temp_matrix,
-        -utils.degToRad(this.state.steering)
-      );
-      temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
-      // translate to center
-      temp_matrix = m4.translate(
-        temp_matrix,
-        -this.centers[1][0],
-        -this.centers[1][1],
-        -this.centers[1][2]
-      );
-
-      this._updateAllWorldMatrices(1, temp_matrix);
-
-      // R front wheel ind: 2
-      temp_matrix = m4.copy(matrix);
-      // return to the initial position
-      temp_matrix = m4.translate(temp_matrix, ...this.centers[2]);
-
-      temp_matrix = m4.zRotate(temp_matrix, utils.degToRad(this.state.zRotate));
-      temp_matrix = m4.yRotate(
-        temp_matrix,
-        -utils.degToRad(this.state.steering)
-      );
-      temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
-
-      temp_matrix = m4.translate(
-        temp_matrix,
-        -this.centers[2][0],
-        -this.centers[2][1],
-        -this.centers[2][2]
-      );
-
-      this._updateAllWorldMatrices(2, temp_matrix);
-
-      // L back wheel ind: 3
-      temp_matrix = m4.copy(matrix);
-
-      temp_matrix = m4.translate(temp_matrix, ...this.centers[3]);
-
-      temp_matrix = m4.zRotate(
-        temp_matrix,
-        -utils.degToRad(this.state.zRotate)
-      );
-      temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
-      temp_matrix = m4.translate(
-        temp_matrix,
-        -this.centers[3][0],
-        -this.centers[3][1],
-        -this.centers[3][2]
-      );
-      this._updateAllWorldMatrices(3, temp_matrix);
-
-      // R back wheel ind: 4
-      temp_matrix = m4.copy(matrix);
-
-      temp_matrix = m4.translate(temp_matrix, ...this.centers[4]);
-      temp_matrix = m4.zRotate(temp_matrix, utils.degToRad(this.state.zRotate));
-      temp_matrix = m4.xRotate(temp_matrix, utils.degToRad(this.state.hub));
-
-      temp_matrix = m4.translate(
-        temp_matrix,
-        -this.centers[4][0],
-        -this.centers[4][1],
-        -this.centers[4][2]
-      );
-
-      this._updateAllWorldMatrices(4, temp_matrix);
-    } else {
-      // the car flies
-      // base matrix (relative to the body)
-
-      let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
-
+    if (this.fly) {
       matrix = m4.zRotate(matrix, -utils.degToRad(this.state.vx * 100));
       matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 80));
-      matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
-
-      // update body
-      this._updateAllWorldMatrices(0, matrix);
-
-      // let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
-
-      // // facing also for rotating right / left
-      // matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 100));
-      // matrix = m4.yRotate(matrix, -utils.degToRad(this.state.facing - 10));
-
-      // matrix = m4.zRotate(matrix, utils.degToRad(this.state.facing));
-
-      // update body
-      // this._updateAllWorldMatrices(0, matrix);
-
-      // L front wheel ind: 1
-      let temp_matrix = m4.copy(matrix);
-      // return to the initial position
-      temp_matrix = m4.translate(temp_matrix, ...this.centers[1]);
-
-      temp_matrix = m4.zRotate(
-        temp_matrix,
-        -utils.degToRad(this.state.zRotate)
-      );
-      // translate to center
-      temp_matrix = m4.translate(
-        temp_matrix,
-        -this.centers[1][0],
-        -this.centers[1][1],
-        -this.centers[1][2]
-      );
-
-      this._updateAllWorldMatrices(1, temp_matrix);
-
-      // R front wheel ind: 2
-      temp_matrix = m4.copy(matrix);
-      // return to the initial position
-      temp_matrix = m4.translate(temp_matrix, ...this.centers[2]);
-
-      temp_matrix = m4.zRotate(temp_matrix, utils.degToRad(this.state.zRotate));
-      temp_matrix = m4.translate(
-        temp_matrix,
-        -this.centers[2][0],
-        -this.centers[2][1],
-        -this.centers[2][2]
-      );
-
-      this._updateAllWorldMatrices(2, temp_matrix);
-
-      // L back wheel ind: 3
-      temp_matrix = m4.copy(matrix);
-
-      temp_matrix = m4.translate(temp_matrix, ...this.centers[3]);
-      temp_matrix = m4.zRotate(
-        temp_matrix,
-        -utils.degToRad(this.state.zRotate)
-      );
-      temp_matrix = m4.translate(
-        temp_matrix,
-        -this.centers[3][0],
-        -this.centers[3][1],
-        -this.centers[3][2]
-      );
-      this._updateAllWorldMatrices(3, temp_matrix);
-
-      // R back wheel ind: 4
-      temp_matrix = m4.copy(matrix);
-
-      temp_matrix = m4.translate(temp_matrix, ...this.centers[4]);
-      temp_matrix = m4.zRotate(temp_matrix, utils.degToRad(this.state.zRotate));
-
-      temp_matrix = m4.translate(
-        temp_matrix,
-        -this.centers[4][0],
-        -this.centers[4][1],
-        -this.centers[4][2]
-      );
-
-      this._updateAllWorldMatrices(4, temp_matrix);
     }
+
+    matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
+    // update body
+    this._updateAllWorldMatrices(0, matrix);
+
+    // L front wheel ind: 1
+    let tempMatrix = m4.copy(matrix);
+    let beMatrices = [m4.zRotation(-utils.degToRad(this.state.zRotate))];
+
+    if (!this.fly)
+      beMatrices.push(m4.yRotation(-utils.degToRad(this.state.steering)));
+
+    beMatrices.push(m4.xRotation(utils.degToRad(this.state.hub)));
+
+    this._updateAllWorldMatrices(
+      1,
+      this._toFromCenter(1, tempMatrix, beMatrices)
+    );
+
+    // R front wheel ind: 2
+    tempMatrix = m4.copy(matrix);
+
+    beMatrices = [m4.zRotation(utils.degToRad(this.state.zRotate))];
+
+    if (!this.fly) {
+      beMatrices.push(m4.yRotation(-utils.degToRad(this.state.steering)));
+      beMatrices.push(m4.xRotation(utils.degToRad(this.state.hub)));
+    }
+
+    this._updateAllWorldMatrices(
+      2,
+      this._toFromCenter(2, tempMatrix, beMatrices)
+    );
+
+    // L back wheel ind: 3
+    tempMatrix = m4.copy(matrix);
+
+    beMatrices = [m4.zRotation(-utils.degToRad(this.state.zRotate))];
+
+    if (!this.fly)
+      beMatrices.push(m4.xRotation(utils.degToRad(this.state.hub)));
+
+    this._updateAllWorldMatrices(
+      3,
+      this._toFromCenter(3, tempMatrix, beMatrices)
+    );
+
+    // R back wheel ind: 4
+    tempMatrix = m4.copy(matrix);
+
+    beMatrices = [m4.zRotation(utils.degToRad(this.state.zRotate))];
+
+    if (!this.fly)
+      beMatrices.push(m4.xRotation(utils.degToRad(this.state.hub)));
+
+    this._updateAllWorldMatrices(
+      4,
+      this._toFromCenter(4, tempMatrix, beMatrices)
+    );
   }
 
   _updateAllWorldMatrices(index, matrix) {
@@ -497,23 +381,21 @@ class Car {
     }
   }
 
-  _setDefault(gl) {
-    this.defaultTextures = {
-      defaultWhite: create1PixelTexture(gl, [255, 255, 255, 255]),
-      defaultNormal: create1PixelTexture(gl, [127, 127, 255, 0]),
-    };
+  _toFromCenter(index, matrix, betweenMatrix) {
+    let temp_m = m4.translate(matrix, ...this.centers[index]);
 
-    this.defaultMaterial = {
-      diffuseMap: this.defaultTextures.defaultWhite,
-      normalMap: this.defaultTextures.defaultNormal,
-      specularMap: this.defaultTextures.defaultWhite,
-      emissiveMap: this.defaultTextures.defaultWhite,
-      diffuse: [1, 1, 1],
-      ambient: [1, 1, 1],
-      specular: [1, 1, 1],
-      shininess: 200,
-      opacity: 1,
-    };
+    betweenMatrix.forEach((mat) => {
+      temp_m = m4.multiply(temp_m, mat);
+    });
+
+    temp_m = m4.translate(
+      temp_m,
+      -this.centers[index][0],
+      -this.centers[index][1],
+      -this.centers[index][2]
+    );
+
+    return temp_m;
   }
 }
 
