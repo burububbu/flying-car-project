@@ -19,18 +19,25 @@ class ControlPanel {
     this.car = car;
     this.cubes = 0;
 
-    this._activeListeners();
-
     this.ctx = controlCanvas.getContext("2d");
     this.title = "Flying car project";
     this.cubesText = "Cubes: 0";
 
     this.shortcuts = [
-      { text: "W A S D: move the car", color: 0 },
-      { text: "F: camera follows the car", color: 0 },
-      { text: "R: rotate the camera with the car", color: 0 },
-      { text: "Y: fly (active if car is stopped)", color: 0 },
+      { text: "W A S D: move the car", color: 1 },
+      { text: "F: camera follows the car", color: 1 },
+      { text: "R: rotate the camera with the car", color: 1 },
+      { text: "Y: fly (active if car is stopped)", color: 1 },
     ];
+
+    this.enabled = false;
+  }
+
+  enablePanel() {
+    this.enabled = true;
+    this._activeListeners();
+
+    this.camera.enable();
   }
 
   _activeListeners() {
@@ -65,6 +72,8 @@ class ControlPanel {
       }
     });
 
+    this.shortcuts[0].color = 0; // activare WASD
+
     // car handler
     window.addEventListener("keydown", (e) => {
       let ind = ["w", "s", "a", "d"].indexOf(e.key);
@@ -88,7 +97,7 @@ class ControlPanel {
   // different if is on the phone or pc
   drawPanel() {
     // update colors
-    this._updateColors();
+    if (this.enabled) this._updateColors();
 
     // Clear the 2D canvas
     let offset = 60; // on y

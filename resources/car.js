@@ -200,21 +200,23 @@ class Car {
       this.extents.back[2] + this.state.pz,
     ];
 
-    let value =
-      (cubeExtent.min[0] >= frontPos[0] &&
-        cubeExtent.min[0] <= backPos[0] &&
-        cubeExtent.min[1] >= frontPos[1] &&
-        cubeExtent.min[1] <= backPos[1] &&
-        cubeExtent.min[2] >= frontPos[2] &&
-        cubeExtent.min[2] <= backPos[2]) ||
-      (cubeExtent.max[0] >= frontPos[0] &&
-        cubeExtent.max[0] <= backPos[0] &&
-        cubeExtent.max[1] >= frontPos[1] &&
-        cubeExtent.max[1] <= backPos[1] &&
-        cubeExtent.max[2] >= frontPos[2] &&
-        cubeExtent.max[2] <= backPos[2]);
+    let rMin =
+      cubeExtent.min[0] >= frontPos[0] &&
+      cubeExtent.min[0] <= backPos[0] &&
+      cubeExtent.min[1] >= frontPos[1] &&
+      cubeExtent.min[1] <= backPos[1] &&
+      cubeExtent.min[2] >= frontPos[2] &&
+      cubeExtent.min[2] <= backPos[2];
 
-    return value;
+    let rMax =
+      cubeExtent.max[0] >= frontPos[0] &&
+      cubeExtent.max[0] <= backPos[0] &&
+      cubeExtent.max[1] >= frontPos[1] &&
+      cubeExtent.max[1] <= backPos[1] &&
+      cubeExtent.max[2] >= frontPos[2] &&
+      cubeExtent.max[2] <= backPos[2];
+
+    return rMin || rMax;
   }
 
   // do a physic step of the car (delta-t constant)

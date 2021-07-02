@@ -21,7 +21,7 @@ const setView = {
 const possibleY = [0.5, 3];
 
 class Scene {
-  constructor(gl, programInfo, programInfoSkybox, lightPosition, cam, canvas) {
+  constructor(gl, programInfo, programInfoSkybox, lightPosition, cam) {
     // create camera
     this.camera = new Camera(cam.D, cam.theta, cam.phi, cam.up, cam.target);
 
@@ -35,6 +35,8 @@ class Scene {
     this.defaults = getDefault(this.gl);
 
     this.lightPosition = lightPosition;
+
+    this.firstStart = true;
   }
 
   // load scene  objects
@@ -58,12 +60,29 @@ class Scene {
 
     // load control panel
     this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car);
+
+    // this.firstStartCameraAnimation();
+  }
+
+  firstStartCameraAnimation() {
+    this.camera.addTheta(utils.degToRad(1));
+    this.camera.addD(-0.1);
+
+    if (this.camera.theta >= utils.degToRad(180)) {
+      // 180 + 360
+      this.firstStart = false;
+      this.controlPanel.enablePanel();
+    }
   }
 
   render() {
     webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
     webglUtils.resizeCanvasToDisplaySize(this.controlPanel.ctx.canvas);
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+
+    if (this.firstStart) {
+      this.firstStartCameraAnimation();
+    }
 
     // --------- draw the control panel --------------
     this.controlPanel.drawPanel();
@@ -82,7 +101,10 @@ class Scene {
 
     // update camera
     if (this.camera.followTarget)
-      this.camera.update(this.car.getCenter(), this.car.state.facing + 180);
+      this.camera.updateTarget(
+        this.car.getCenter(),
+        this.car.state.facing + 180
+      );
 
     // update cube world matrix, handle collision with car
     this._cubeHandler();

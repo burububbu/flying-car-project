@@ -22,9 +22,11 @@ class Camera {
     this.lastPosition = [0, 0, 0];
 
     // handled by control panel
-    this.followTarget = true;
-    this.rotateWithTarget = true;
+    this.followTarget = false;
+    this.rotateWithTarget = false;
+  }
 
+  enable() {
     this._activeListeners();
   }
 
@@ -33,10 +35,23 @@ class Camera {
     return m4.lookAt(this.cartesianCoord, this.target, this.up);
   }
 
-  update(target, rotation) {
+  updateTarget(target, rotation) {
     // update target and rotation of the camera if requested
     this.target = target;
     if (this.rotateWithTarget) this.theta = degToRad(rotation);
+    this._updateCartesianCoord();
+  }
+
+  addPhi(inc) {
+    this.phi += inc;
+    this._updateCartesianCoord();
+  }
+  addTheta(inc) {
+    this.theta += inc;
+    this._updateCartesianCoord();
+  }
+  addD(inc) {
+    this.D += inc;
     this._updateCartesianCoord();
   }
 
@@ -83,7 +98,7 @@ class Camera {
 
     // zoom in zoom out
     window.addEventListener("wheel", (event) => {
-      if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.01; // in this way
+      if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.008;
       this._updateCartesianCoord();
     });
   }

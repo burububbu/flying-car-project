@@ -7,8 +7,8 @@ async function main() {
   let lightPosition = [0, 30, 0]; // initial ligth position
 
   let cameraSettings = {
-    D: 15, // D
-    theta: utils.degToRad(180), // theta with theta = 0 and phi = 90°, we're on z axis
+    D: 40, // D
+    theta: utils.degToRad(0), // theta with theta = 0 and phi = 90°, we're on z axis
     phi: utils.degToRad(60), // phi
     up: [0, 1, 0], //up
     target: [0, 0, 0], // target
