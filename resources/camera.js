@@ -24,10 +24,40 @@ class Camera {
     // handled by control panel
     this.followTarget = false;
     this.rotateWithTarget = false;
+    this.firstPerson = false;
+
+    this.targetPhi = degToRad(90);
+    this.targetTheta = degToRad(1);
+    this.targetD = 20;
   }
 
   enable() {
     this._activeListeners();
+  }
+
+  // work with cartesian coordinates
+  setFirstPerson(firstCoor, rotation) {
+    // use spherical coordinates for the target
+    this.cartesianCoord = firstCoor;
+    this.targetTheta = degToRad(rotation);
+    this.target = this.getTargetFirstPerson();
+  }
+
+  getTargetFirstPerson() {
+    return this._getCartCoord(
+      this.targetPhi,
+      this.targetTheta,
+      this.targetD,
+      this.cartesianCoord
+    );
+  }
+
+  _getCartCoord(phi, theta, D, origin) {
+    return [
+      D * Math.sin(phi) * Math.sin(theta) + origin[0], // x (old y)
+      D * Math.cos(phi) + origin[1], // y (old z)
+      D * Math.sin(phi) * Math.cos(theta) + origin[2], // z (old x)
+    ];
   }
 
   // get camera matrix
@@ -38,8 +68,19 @@ class Camera {
   updateTarget(target, rotation) {
     // update target and rotation of the camera if requested
     this.target = target;
+
     if (this.rotateWithTarget) this.theta = degToRad(rotation);
+
     this._updateCartesianCoord();
+  }
+
+  _updateCartesianCoord() {
+    return (this.cartesianCoord = this._getCartCoord(
+      this.phi,
+      this.theta,
+      this.D,
+      this.target
+    ));
   }
 
   addPhi(inc) {
@@ -53,14 +94,6 @@ class Camera {
   addD(inc) {
     this.D += inc;
     this._updateCartesianCoord();
-  }
-
-  _updateCartesianCoord() {
-    this.cartesianCoord[0] =
-      this.D * Math.sin(this.phi) * Math.sin(this.theta) + this.target[0]; // x (old y)
-    this.cartesianCoord[1] = this.D * Math.cos(this.phi) + this.target[1]; // y (old z)
-    this.cartesianCoord[2] =
-      this.D * Math.sin(this.phi) * Math.cos(this.theta) + this.target[2]; // z (old x)
   }
 
   // active listeners useful to handle the zoom and camera moving
@@ -86,19 +119,23 @@ class Camera {
 
     // user hold down the mouse
     window.addEventListener("mousedown", (event) => {
-      // update current mouse position
-      this.lastPosition = [event.pageX, event.pageY];
-      window.addEventListener("mousemove", moveHandler);
+      if (!this.firstPerson) {
+        // update current mouse position
+        this.lastPosition = [event.pageX, event.pageY];
+        window.addEventListener("mousemove", moveHandler);
+      }
     });
 
     // user doesn't hold the mouse
-    window.addEventListener("mouseup", () =>
-      window.removeEventListener("mousemove", moveHandler)
-    );
+    window.addEventListener("mouseup", () => {
+      if (!this.firstPerson)
+        window.removeEventListener("mousemove", moveHandler);
+    });
 
     // zoom in zoom out
     window.addEventListener("wheel", (event) => {
-      if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.008;
+      if (!this.firstPerson)
+        if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.008;
       this._updateCartesianCoord();
     });
   }

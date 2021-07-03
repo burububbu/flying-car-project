@@ -8,8 +8,8 @@ async function main() {
 
   let cameraSettings = {
     D: 40, // D
-    theta: utils.degToRad(0), // theta with theta = 0 and phi = 90°, we're on z axis
-    phi: utils.degToRad(60), // phi
+    theta: utils.degToRad(0), // with theta = 0 and phi = 90°, we're on z axis
+    phi: utils.degToRad(60),
     up: [0, 1, 0], //up
     target: [0, 0, 0], // target
   };

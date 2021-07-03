@@ -27,6 +27,7 @@ class ControlPanel {
       { text: "W A S D: move the car", color: 1 },
       { text: "F: camera follows the car", color: 1 },
       { text: "R: rotate the camera with the car", color: 1 },
+      { text: "P: first person", color: 1 },
       { text: "Y: fly (active if car is stopped)", color: 1 },
     ];
 
@@ -45,9 +46,11 @@ class ControlPanel {
     window.addEventListener("keydown", (e) => {
       switch (e.key) {
         case "f":
-          //   this.cameraSettings.follow = !this.cameraSettings.follow;
-          this.camera.followTarget = !this.camera.followTarget;
-          this.camera.rotateWithTarget = false;
+          if (!this.camera.firstPerson) {
+            //   this.cameraSettings.follow = !this.cameraSettings.follow;
+            this.camera.followTarget = !this.camera.followTarget;
+            this.camera.rotateWithTarget = false;
+          }
           break;
 
         case "r":
@@ -63,7 +66,11 @@ class ControlPanel {
           break;
 
         case "p":
-          // this.camera.setFirstPerson(this.car.getFirstPerson());
+          this.camera.firstPerson = !this.camera.firstPerson;
+          if (!this.camera.firstPerson) {
+            this.camera.followTarget = !this.camera.followTarget;
+            this.camera.rotateWithTarget = false;
+          }
           break;
 
         default:
@@ -131,18 +138,24 @@ class ControlPanel {
   }
 
   _updateColors() {
-    // f(ollow)
-    this.shortcuts[1].color = this.camera.followTarget ? 2 : 0;
+    if (this.camera.firstPerson) {
+      this.shortcuts[1].color = 1;
+      this.shortcuts[2].color = 1;
 
-    // r(otate)
-    this.shortcuts[2].color = this.camera.followTarget
-      ? this.camera.rotateWithTarget
-        ? 2
-        : 0
-      : 1;
+      this.shortcuts[3].color = 2;
+    } else {
+      // f(ollow)
+      this.shortcuts[1].color = this.camera.followTarget ? 2 : 0;
 
+      // r(otate)
+      this.shortcuts[2].color = this.camera.followTarget
+        ? this.camera.rotateWithTarget
+          ? 2
+          : 0
+        : 1;
+    }
     //(fl)y
-    this.shortcuts[3].color = this.car.isStopped() ? (this.car.fly ? 2 : 0) : 1; // grey
+    this.shortcuts[4].color = this.car.isStopped() ? (this.car.fly ? 2 : 0) : 1; // grey
   }
 }
 

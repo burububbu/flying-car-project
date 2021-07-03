@@ -106,6 +106,13 @@ class Scene {
         this.car.state.facing + 180
       );
 
+    if (this.camera.firstPerson) {
+      this.camera.setFirstPerson(
+        this.car.getFirstPerson(),
+        this.car.state.facing
+      );
+    }
+
     // update cube world matrix, handle collision with car
     this._cubeHandler();
 

@@ -43,12 +43,12 @@ class Car {
     ];
 
     this.extents = {
-      back: [
+      front: [
         Number.NEGATIVE_INFINITY,
         Number.NEGATIVE_INFINITY,
         Number.NEGATIVE_INFINITY,
       ],
-      front: [
+      back: [
         Number.POSITIVE_INFINITY,
         Number.POSITIVE_INFINITY,
         Number.POSITIVE_INFINITY,
@@ -118,11 +118,11 @@ class Car {
     // compute global min and max (with 0 as origin) (then we have to sum to px  py and pz)
     for (let { min, max } of extents) {
       min.forEach((value, ind) => {
-        if (this.extents.front[ind] > value) this.extents.front[ind] = value;
+        if (this.extents.back[ind] > value) this.extents.back[ind] = value;
       });
 
       max.forEach((value, ind) => {
-        if (this.extents.back[ind] < value) this.extents.back[ind] = value;
+        if (this.extents.front[ind] < value) this.extents.front[ind] = value;
       });
     }
 
@@ -201,20 +201,20 @@ class Car {
     ];
 
     let rMin =
-      cubeExtent.min[0] >= frontPos[0] &&
-      cubeExtent.min[0] <= backPos[0] &&
-      cubeExtent.min[1] >= frontPos[1] &&
-      cubeExtent.min[1] <= backPos[1] &&
-      cubeExtent.min[2] >= frontPos[2] &&
-      cubeExtent.min[2] <= backPos[2];
+      cubeExtent.min[0] <= frontPos[0] &&
+      cubeExtent.min[0] >= backPos[0] &&
+      cubeExtent.min[1] <= frontPos[1] &&
+      cubeExtent.min[1] >= backPos[1] &&
+      cubeExtent.min[2] <= frontPos[2] &&
+      cubeExtent.min[2] >= backPos[2];
 
     let rMax =
-      cubeExtent.max[0] >= frontPos[0] &&
-      cubeExtent.max[0] <= backPos[0] &&
-      cubeExtent.max[1] >= frontPos[1] &&
-      cubeExtent.max[1] <= backPos[1] &&
-      cubeExtent.max[2] >= frontPos[2] &&
-      cubeExtent.max[2] <= backPos[2];
+      cubeExtent.max[0] <= frontPos[0] &&
+      cubeExtent.max[0] >= backPos[0] &&
+      cubeExtent.max[1] <= frontPos[1] &&
+      cubeExtent.max[1] >= backPos[1] &&
+      cubeExtent.max[2] <= frontPos[2] &&
+      cubeExtent.max[2] >= backPos[2];
 
     return rMin || rMax;
   }
@@ -375,6 +375,15 @@ class Car {
       4,
       this._toFromCenter(4, tempMatrix, beMatrices)
     );
+  }
+
+  // get the more higher point of the car
+  getFirstPerson() {
+    return [
+      this.state.px + 0.1,
+      this.state.py + this.extents.front[1] + 0.3,
+      this.state.pz,
+    ];
   }
 
   _updateAllWorldMatrices(index, matrix) {
