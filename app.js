@@ -33,6 +33,9 @@ async function main() {
       "downRightCommand",
 
       "flyCommand",
+      "firstPersonCommand",
+      "cameraFollowCommand",
+      "cameraRotateCommand",
     ].forEach((command) => {
       commands.push(document.getElementById(command));
     });

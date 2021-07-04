@@ -51,7 +51,8 @@ class ControlPanel {
 
   enablePanel() {
     this.enabled = true;
-    this.camera.enable();
+
+    this._activeCameraListeners();
 
     if (this.mobile) this._activeMobileListeners(this.commands);
     else this._activeListeners();
@@ -101,6 +102,18 @@ class ControlPanel {
     this.commands[8].addEventListener("touchstart", () => {
       this._setFly();
     });
+
+    this.commands[9].addEventListener("touchstart", () => {
+      this._setFP();
+    });
+
+    this.commands[10].addEventListener("touchstart", () => {
+      this._setFollow();
+    });
+
+    this.commands[11].addEventListener("touchstart", () => {
+      this._setRotate();
+    });
   }
 
   _activeListeners() {
@@ -137,8 +150,43 @@ class ControlPanel {
       let ind = ["w", "s", "a", "d"].indexOf(e.key);
       if (ind > -1) this.car.keys[ind] = false;
     });
+  }
 
-    // camera handler in its class
+  _activeCameraListeners() {
+    let events = this.mobile
+      ? ["touchstart", "touchmove", "touchend"]
+      : ["mousedown", "mousemove", "mouseup"];
+
+    // user hold down the mouse
+    window.addEventListener(events[0], () => {
+      if (!this.firstPerson) {
+        // update current mouse position
+        // this.lastPosition = [event.pageX, event.pageY];
+        window.addEventListener(
+          events[1],
+          this.mobile
+            ? this.camera.moveHandlerMobile
+            : this.camera.moveHandlerPC
+        );
+      }
+    });
+
+    // user doesn't hold the mouse
+    window.addEventListener(events[2], () => {
+      console.log("up");
+      if (!this.firstPerson)
+        window.removeEventListener(
+          events[1],
+          this.mobile
+            ? this.camera.moveHandlerMobile
+            : this.camera.moveHandlerPC
+        );
+    });
+
+    if (!this.mobile) {
+      // zoom in zoom out
+      window.addEventListener("wheel", this.camera.zoomHandlerPC);
+    }
   }
 
   _setFly() {
@@ -148,6 +196,7 @@ class ControlPanel {
 
   _setFP() {
     this.camera.firstPerson = !this.camera.firstPerson;
+
     if (!this.camera.firstPerson) {
       this.camera.followTarget = !this.camera.followTarget;
       this.camera.rotateWithTarget = false;
@@ -232,6 +281,7 @@ class ControlPanel {
           : 0
         : 1;
     }
+
     //(fl)y
     this.shortcuts[4].color = this.car.isStopped() ? (this.car.fly ? 2 : 0) : 1; // grey
   }

@@ -325,10 +325,10 @@ class Car {
     let tempMatrix = m4.copy(matrix);
     let beMatrices = [m4.zRotation(-utils.degToRad(this.state.zRotate))];
 
-    if (!this.fly)
+    if (!this.fly) {
       beMatrices.push(m4.yRotation(-utils.degToRad(this.state.steering)));
-
-    beMatrices.push(m4.xRotation(utils.degToRad(this.state.hub)));
+      beMatrices.push(m4.xRotation(utils.degToRad(this.state.hub)));
+    }
 
     this._updateAllWorldMatrices(
       1,

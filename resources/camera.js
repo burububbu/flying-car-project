@@ -1,4 +1,4 @@
-import { degToRad } from "./utils.js";
+import { degToRad, isMobileDevice, phiCheck } from "./utils.js";
 
 const rad360 = Math.PI * 2;
 const dr = degToRad(1.5); // if odd then change phi condition with newPhi + dr > 0 && newPhi <= Math.PI
@@ -29,10 +29,9 @@ class Camera {
     this.targetPhi = degToRad(90);
     this.targetTheta = degToRad(1);
     this.targetD = 20;
-  }
 
-  enable() {
-    this._activeListeners();
+    // set camera events handler
+    this.setHandlers();
   }
 
   // work with cartesian coordinates
@@ -96,57 +95,57 @@ class Camera {
     this._updateCartesianCoord();
   }
 
-  // active listeners useful to handle the zoom and camera moving
-  _activeListeners() {
-    let moveHandler = (event) => {
-      // mouse movement on x axis
-      if (!this.rotateWithTarget && event.pageX !== this.lastPosition[0]) {
-        event.pageX > this.lastPosition[0] // % (rad360) because theta have to be between 0 and 2PI (here i check only the latter condition)
-          ? (this.theta = this.theta + (dr % rad360))
-          : (this.theta = this.theta - (dr % rad360));
-      }
+  setHandlers() {
+    this.moveHandlerPC = (event) => {
+      if (!this.firstPerson) {
+        // mouse movement on x axis
+        if (!this.rotateWithTarget && event.pageX !== this.lastPosition[0]) {
+          event.pageX > this.lastPosition[0] // % (rad360) because theta have to be between 0 and 2PI (here i check only the latter condition)
+            ? (this.theta = this.theta + (dr % rad360))
+            : (this.theta = this.theta - (dr % rad360));
+        }
 
-      // mouse movement on y axis
-      if (event.pageY !== this.lastPosition[1]) {
-        event.pageY < this.lastPosition[1]
-          ? (this.phi = phiCheck(this.phi, dr))
-          : (this.phi = phiCheck(this.phi, -dr));
-      }
-      this._updateCartesianCoord();
+        // mouse movement on y axis
+        if (event.pageY !== this.lastPosition[1]) {
+          event.pageY < this.lastPosition[1]
+            ? (this.phi = phiCheck(this.phi, dr))
+            : (this.phi = phiCheck(this.phi, -dr));
+        }
+        this._updateCartesianCoord();
 
-      this.lastPosition = [event.pageX, event.pageY];
+        this.lastPosition = [event.pageX, event.pageY];
+      }
     };
 
-    // user hold down the mouse
-    window.addEventListener("mousedown", (event) => {
+    this.moveHandlerMobile = (event) => {
       if (!this.firstPerson) {
-        // update current mouse position
-        this.lastPosition = [event.pageX, event.pageY];
-        window.addEventListener("mousemove", moveHandler);
+        // mouse movement on x axis
+        let touch = event.touches[0];
+
+        if (!this.rotateWithTarget && touch.pageX !== this.lastPosition[0]) {
+          touch.pageX > this.lastPosition[0] // % (rad360) because theta have to be between 0 and 2PI (here i check only the latter condition)
+            ? (this.theta = this.theta + (dr % rad360))
+            : (this.theta = this.theta - (dr % rad360));
+        }
+
+        // mouse movement on y axis
+        if (touch.pageY !== this.lastPosition[1]) {
+          touch.pageY < this.lastPosition[1]
+            ? (this.phi = phiCheck(this.phi, dr))
+            : (this.phi = phiCheck(this.phi, -dr));
+        }
+        this._updateCartesianCoord();
+
+        this.lastPosition = [touch.pageX, touch.pageY];
       }
-    });
+    };
 
-    // user doesn't hold the mouse
-    window.addEventListener("mouseup", () => {
-      if (!this.firstPerson)
-        window.removeEventListener("mousemove", moveHandler);
-    });
-
-    // zoom in zoom out
-    window.addEventListener("wheel", (event) => {
+    this.zoomHandlerPC = (event) => {
       if (!this.firstPerson)
         if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.008;
       this._updateCartesianCoord();
-    });
+    };
   }
-}
-
-// phi have to be  0 < phi < pi
-function phiCheck(phi, dr) {
-  let newPhi = phi + dr;
-  return newPhi + dr >= degToRad(30) && newPhi <= Math.PI / 2 - degToRad(5)
-    ? newPhi
-    : phi;
 }
 
 export { Camera };
