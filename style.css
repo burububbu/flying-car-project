@@ -15,7 +15,7 @@ body {
   height: 100%;
 }
 
-.controlPanel {
+.controlPanelPC {
   background-color: rgba(188, 227, 236, 0.699);
 
   position: absolute;
@@ -23,5 +23,23 @@ body {
   top: 10px;
 
   width: 220px;
-  height: 50%;
+  height: 25%;
+}
+
+.controlPanelMobile {
+  background-color: rgba(188, 227, 236, 0.699);
+
+  position: absolute;
+  left: 10px;
+  bottom: 20px;
+
+  width: fit-content;
+  height: fit-content;
+}
+
+.panelImage {
+  pointer-events: visiblePainted;
+  user-select: none;
+  width: 55px;
+  height: 55px;
 }
