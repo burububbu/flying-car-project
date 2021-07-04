@@ -1,6 +1,8 @@
 // not only the ontrol canvas but also the values to control (change the car, change the background, the ground, camera settings)
 // car movement handled directly y the car
 
+import { isMobileDevice } from "./utils.JS";
+
 // has the camera object
 
 /*
@@ -12,14 +14,27 @@ const colors = ["black", "grey", "green"];
 
 class ControlPanel {
   // maybe main canvas isn't useful, use window
-  constructor(controlCanvas, camera, car) {
-    // only useful thing
-
+  constructor(controlPanel, camera, car, commands) {
     this.camera = camera;
     this.car = car;
     this.cubes = 0;
 
-    this.ctx = controlCanvas.getContext("2d");
+    this.mobile = isMobileDevice();
+    this.commands = commands;
+
+    if (this.mobile) {
+      // if non è ruotato, chiedi di ruotare
+      this.commands = commands;
+
+      this.initMobileVersion();
+    } else this.initPCVersion(controlPanel);
+
+    this.enabled = false;
+  }
+
+  initPCVersion(controlPanel) {
+    this.ctx = controlPanel.getContext("2d");
+
     this.title = "Flying car project";
     this.cubesText = "Cubes: 0";
 
@@ -30,15 +45,62 @@ class ControlPanel {
       { text: "P: first person", color: 1 },
       { text: "Y: fly (active if car is stopped)", color: 1 },
     ];
-
-    this.enabled = false;
   }
+
+  initMobileVersion() {}
 
   enablePanel() {
     this.enabled = true;
-    this._activeListeners();
-
     this.camera.enable();
+
+    if (this.mobile) this._activeMobileListeners(this.commands);
+    else this._activeListeners();
+  }
+
+  _activeMobileListeners() {
+    // [
+    //   "upCommand",
+    //   "downCommand",
+    //   "leftCommand",
+    //   "rightCommand",
+
+    // "upLeftCommand",
+    // "upRightCommand",
+    // "downLeftCommand",
+    // "downRightCommand",
+
+    //   "flyCommand",
+    // ]
+
+    this.commands.slice(0, 4).forEach((command, ind) => {
+      command.addEventListener("touchstart", () => (this.car.keys[ind] = true));
+      command.addEventListener("touchend", () => (this.car.keys[ind] = false));
+    });
+
+    // add listenerd to commands up-left, up-right ...
+    let updateTwoKeys = (commandInd, v1, v2) => {
+      this.commands[commandInd].addEventListener("touchstart", () => {
+        this.car.keys[v1] = true;
+        this.car.keys[v2] = true;
+      });
+
+      this.commands[commandInd].addEventListener("touchend", () => {
+        this.car.keys[v1] = false;
+        this.car.keys[v2] = false;
+      });
+    };
+
+    [
+      [4, 0, 2],
+      [5, 0, 3],
+      [6, 1, 2],
+      [7, 1, 3],
+    ].forEach((indexes) => updateTwoKeys(...indexes));
+
+    // add listeners for other commands
+    this.commands[8].addEventListener("touchstart", () => {
+      this._setFly();
+    });
   }
 
   _activeListeners() {
@@ -46,35 +108,18 @@ class ControlPanel {
     window.addEventListener("keydown", (e) => {
       switch (e.key) {
         case "f":
-          if (!this.camera.firstPerson) {
-            //   this.cameraSettings.follow = !this.cameraSettings.follow;
-            this.camera.followTarget = !this.camera.followTarget;
-            this.camera.rotateWithTarget = false;
-          }
+          this._setFollow();
           break;
-
         case "r":
-          if (this.camera.followTarget) {
-            this.camera.rotateWithTarget = !this.camera.rotateWithTarget;
-          }
+          this._setRotate();
           break;
-
         case "y":
-          if (this.car.isStopped()) this.car.fly = !this.car.fly;
-          if (!this.car.fly) this.car.state.fluctuate = false;
-
+          this._setFly();
           break;
-
         case "p":
-          this.camera.firstPerson = !this.camera.firstPerson;
-          if (!this.camera.firstPerson) {
-            this.camera.followTarget = !this.camera.followTarget;
-            this.camera.rotateWithTarget = false;
-          }
+          this._setFP();
           break;
-
         default:
-          //   console.log(e.key + ": command not recognised");
           break;
       }
     });
@@ -96,6 +141,32 @@ class ControlPanel {
     // camera handler in its class
   }
 
+  _setFly() {
+    if (this.car.isStopped()) this.car.fly = !this.car.fly;
+    if (!this.car.fly) this.car.state.fluctuate = false;
+  }
+
+  _setFP() {
+    this.camera.firstPerson = !this.camera.firstPerson;
+    if (!this.camera.firstPerson) {
+      this.camera.followTarget = !this.camera.followTarget;
+      this.camera.rotateWithTarget = false;
+    }
+  }
+
+  _setRotate() {
+    if (this.camera.followTarget) {
+      this.camera.rotateWithTarget = !this.camera.rotateWithTarget;
+    }
+  }
+
+  _setFollow() {
+    if (!this.camera.firstPerson) {
+      this.camera.followTarget = !this.camera.followTarget;
+      this.camera.rotateWithTarget = false;
+    }
+  }
+
   addCube() {
     this.cubesText =
       ++this.cubes == 10 ? "Cubes: 10. YOU WIN!" : "Cubes: " + this.cubes;
@@ -103,6 +174,13 @@ class ControlPanel {
 
   // different if is on the phone or pc
   drawPanel() {
+    if (this.mobile) {
+    } else {
+      this.drawPCPanel();
+    }
+  }
+
+  drawPCPanel() {
     // update colors
     if (this.enabled) this._updateColors();
 

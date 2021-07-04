@@ -15,7 +15,32 @@ async function main() {
   };
 
   const canvas = document.getElementById("canvas");
-  const panelCanvas = document.getElementById("controlPanel");
+
+  let controlPanel;
+  let commands = [];
+
+  if (utils.isMobileDevice()) {
+    controlPanel = document.getElementById("controlPanelMobile");
+    [
+      "upCommand",
+      "downCommand",
+      "leftCommand",
+      "rightCommand",
+
+      "upLeftCommand",
+      "upRightCommand",
+      "downLeftCommand",
+      "downRightCommand",
+
+      "flyCommand",
+    ].forEach((command) => {
+      commands.push(document.getElementById(command));
+    });
+    document.getElementById("controlPanelPC").style.display = "none";
+  } else {
+    controlPanel = document.getElementById("controlPanelPC");
+    document.getElementById("controlPanelMobile").style.display = "none";
+  }
 
   const gl = canvas.getContext("webgl");
 
@@ -61,7 +86,8 @@ async function main() {
     "skybox", // background
     "DeLorean", // car
     "Cube", // object
-    panelCanvas
+    controlPanel,
+    commands
   );
 
   scene.render();

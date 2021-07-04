@@ -17,7 +17,6 @@ function radToDeg(rad) {
 
 async function loadOBJ(path, name) {
   let textOBJ = await loadText(path + name + ".obj");
-
   let dataOBJ = parseOBJ(textOBJ); // {geometries : [], materiallibs: []}
 
   let textMTL = "";
@@ -62,6 +61,10 @@ function getRandomArbitrary(min, max) {
   return Math.random() * (max - min) + min;
 }
 
+function isMobileDevice() {
+  return navigator.userAgent.match(/Android/);
+}
+
 export {
   loadText,
   degToRad,
@@ -69,4 +72,5 @@ export {
   loadOBJ,
   getGeometriesExtents,
   getRandomArbitrary,
+  isMobileDevice,
 };

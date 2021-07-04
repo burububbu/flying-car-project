@@ -5,8 +5,30 @@
   <body>
     <div class="container">
       <canvas id="canvas" class="canvas"></canvas>
-      <canvas id="controlPanel" class="controlPanel"></canvas>
+      <canvas id="controlPanelPC" class="controlPanelPC"></canvas>
+
+      <span id="controlPanelMobile" class="controlPanelMobile">
+        <table>
+          <tr>
+            <th ><img src="./panel/up-left.png" oncontextmenu="return false;" class="panelImage" id='upLeftCommand'; /></th>
+            <th><img src="./panel/up.png" oncontextmenu="return false;" class="panelImage" id='upCommand' /></th>
+            <th><img src="./panel/up-right.png" oncontextmenu="return false;" class="panelImage" id='upRightCommand'/></th>
+          </tr>
+        </tr>
+          <tr>
+            <th><img src="./panel/left.png" oncontextmenu="return false;" class="panelImage" id='leftCommand'/></th>
+            <th><img src="./panel/fly.png" oncontextmenu="return false;" class="panelImage" id='flyCommand'/></th>
+            <th><img src="./panel/right.png" oncontextmenu="return false;" class="panelImage" id='rightCommand'/></th>
+          </tr>
+          <tr>
+            <th><img src="./panel/down-left.png" oncontextmenu="return false;" class="panelImage" id='downLeftCommand' /></th>
+            <th><img src="./panel/down.png" oncontextmenu="return false;" class="panelImage" id='downCommand'/></th>
+            <th><img src="./panel/down-right.png" oncontextmenu="return false;" class="panelImage" id='downRightCommand' /></th>
+          </tr>
+        </table>
+      </span>
     </div>
+
     <!-- libraries -->
     <script src="./libraries/m4.js"></script>
     <script src="./libraries/webgl-utils.js"></script>

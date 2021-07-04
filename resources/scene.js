@@ -48,7 +48,8 @@ class Scene {
     carFile,
     cubeFile,
 
-    controlCanvas
+    controlCanvas,
+    commands
   ) {
     this._loadBackground(path + backgroundFolder);
 
@@ -59,7 +60,7 @@ class Scene {
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
 
     // load control panel
-    this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car);
+    this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car, commands);
 
     // this.firstStartCameraAnimation();
   }
@@ -77,7 +78,9 @@ class Scene {
 
   render() {
     webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
-    webglUtils.resizeCanvasToDisplaySize(this.controlPanel.ctx.canvas);
+    if (this.controlPanel.ctx)
+      webglUtils.resizeCanvasToDisplaySize(this.controlPanel.ctx.canvas);
+
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
 
     if (this.firstStart) {
