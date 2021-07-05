@@ -60,24 +60,16 @@ class Scene {
     groundFile, // terrain -> terrain/terrain.obj
     backgroundFolder, // containing the skybox images
     carFile,
-    cubeFile,
-
-    controlCanvas,
-    commands
+    cubeFile
   ) {
     this._loadBackground(path + backgroundFolder);
     // load control panel
-    this.controlPanel = new ControlPanel(
-      this.gameCanvas,
-      controlCanvas,
-      commands
-    );
 
     await this._loadGround(path, groundFile);
     await this._loadCar(path, carFile); // not normal map
     await this._loadCube(path, cubeFile);
 
-    this.controlPanel.initPanel(this.camera, this.car);
+    this.controlPanel = new ControlPanel(this.camera, this.car);
 
     this._handleBumpMapping();
 

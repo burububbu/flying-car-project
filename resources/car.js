@@ -297,7 +297,7 @@ class Car {
         toRet = -fluctuateValues[1];
       }
     } else {
-      if (this.state.py > 0) {
+      if (this.state.py >= 0) {
         toRet = this.state.vy - yAdd;
       }
     }
@@ -314,8 +314,6 @@ class Car {
     let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
 
     if (this.fly) {
-      console.log(this.state.vx);
-      console.log(this.state.vz);
       matrix = m4.zRotate(matrix, -utils.degToRad(this.state.vx * 50));
       matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 50));
     }

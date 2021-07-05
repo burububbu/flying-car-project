@@ -11,34 +11,56 @@ grey: i can't use the functionality
 green: i have activated the functionality
 */
 const colors = ["black", "grey", "green"];
+const commandNames = [
+  "upCommand",
+  "downCommand",
+  "leftCommand",
+  "rightCommand",
+
+  "upLeftCommand",
+  "upRightCommand",
+  "downLeftCommand",
+  "downRightCommand",
+
+  "flyCommand",
+  "firstPersonCommand",
+  "cameraFollowCommand",
+  "cameraRotateCommand",
+
+  "zoomInCommand",
+  "zoomOutCommand",
+];
 
 class ControlPanel {
-  // maybe main canvas isn't useful, use window
-  constructor(gameCanvas, controlPanel, commands) {
+  constructor(camera, car) {
     this.cubes = 0;
     this.bumpMapping = false;
-
-    this.mobile = isMobileDevice();
-    this.commands = commands;
-
     this.enabled = false;
 
-    this.controlPanel = controlPanel;
-    this.gameCanvas = gameCanvas;
-  }
+    this.offset = 60;
 
-  initPanel(camera, car) {
+    this.mobile = isMobileDevice();
+
     this.camera = camera;
     this.car = car;
 
+    // set main canvas, commands (mobile version) or control canvas (pc version)
+    this.mainCanvas = document.getElementById("canvas");
+
     if (this.mobile) {
-      this.initMobileVersion();
-    } else this.initPCVersion();
+      this.commands = commandNames.map((command) =>
+        document.getElementById(command)
+      );
+    } else {
+      let controlPanelPC = document.getElementById("controlPanelPC");
+      this.ctx = controlPanelPC.getContext("2d");
+
+      this.initPCVersion();
+    }
   }
 
+  // init values to draw on the canvas
   initPCVersion() {
-    this.ctx = this.controlPanel.getContext("2d");
-
     this.title = "Flying car project";
     this.cubesText = "Cubes: 0";
 
@@ -53,44 +75,23 @@ class ControlPanel {
     this.advancedSettings = [{ text: "M: active bump mapping", color: 1 }];
   }
 
-  initMobileVersion() {}
-
   enablePanel() {
     this.enabled = true;
 
-    this._activeCameraListeners();
+    this._activeCameraListeners(); // unique handler for touch
 
     if (this.mobile) this._activeMobileListeners(this.commands);
-    else this._activeListeners();
+    else this._activePCListeners();
   }
 
   _activeMobileListeners() {
-    // [
-    //   "upCommand",
-    //   "downCommand",
-    //   "leftCommand",
-    //   "rightCommand",
-
-    //   "upLeftCommand",
-    //   "upRightCommand",
-    //   "downLeftCommand",
-    //   "downRightCommand",
-
-    //   "flyCommand",
-    //   "firstPersonCommand",
-    //   "cameraFollowCommand",
-    //   "cameraRotateCommand",
-
-    //   "zoomInCommand",
-    //   "zoomOutCommand",
-    // ]
-
+    // w s a d commands
     this.commands.slice(0, 4).forEach((command, ind) => {
       command.addEventListener("touchstart", () => (this.car.keys[ind] = true));
       command.addEventListener("touchend", () => (this.car.keys[ind] = false));
     });
 
-    // add listenerd to commands up-left, up-right ...
+    // up-left, u-right, down-left, down-right commands. ----
     let updateTwoKeys = (commandInd, v1, v2) => {
       this.commands[commandInd].addEventListener("touchstart", () => {
         this.car.keys[v1] = true;
@@ -109,8 +110,9 @@ class ControlPanel {
       [6, 1, 2],
       [7, 1, 3],
     ].forEach((indexes) => updateTwoKeys(...indexes));
+    // -------
 
-    // add listeners for other commands
+    // other commands
     this.commands[8].addEventListener("touchstart", () => {
       this._setFly();
     });
@@ -124,12 +126,12 @@ class ControlPanel {
     });
 
     this.commands[11].addEventListener("touchstart", () => {
-      this._setRotate();
+      this._setRotate(); // rotate camera with the target
     });
   }
 
-  _activeListeners() {
-    // shortcuts
+  _activePCListeners() {
+    //handle shortcuts
     window.addEventListener("keydown", (e) => {
       switch (e.key) {
         case "f":
@@ -145,14 +147,12 @@ class ControlPanel {
           this._setFP();
           break;
         case "m":
-          this.bumpMapping = !this.bumpMapping;
+          this.bumpMapping = !this.bumpMapping; // enable/disable bump mapping
           break;
         default:
           break;
       }
     });
-
-    this.shortcuts[0].color = 0; // activare WASD
 
     // car handler
     window.addEventListener("keydown", (e) => {
@@ -172,12 +172,11 @@ class ControlPanel {
       ? ["touchstart", "touchmove", "touchend"]
       : ["mousedown", "mousemove", "mouseup"];
 
-    // user hold down the mouse
-    this.gameCanvas.addEventListener(events[0], () => {
+    // user holds down the mouse / starts to touch the screen
+    this.mainCanvas.addEventListener(events[0], () => {
       if (!this.firstPerson) {
         // update current mouse position
-        // this.lastPosition = [event.pageX, event.pageY];
-        this.gameCanvas.addEventListener(
+        this.mainCanvas.addEventListener(
           events[1],
           this.mobile
             ? this.camera.moveHandlerMobile
@@ -186,10 +185,10 @@ class ControlPanel {
       }
     });
 
-    // user doesn't hold the mouse
-    this.gameCanvas.addEventListener(events[2], () => {
+    // user holds down the mouse anymore / ends to touch the screen
+    this.mainCanvas.addEventListener(events[2], () => {
       if (!this.firstPerson)
-        this.gameCanvas.removeEventListener(
+        this.mainCanvas.removeEventListener(
           events[1],
           this.mobile
             ? this.camera.moveHandlerMobile
@@ -197,6 +196,7 @@ class ControlPanel {
         );
     });
 
+    // handle zoom in/ out  with two buttons mobile version) or with wheel (pc version)
     if (this.mobile) {
       this.commands[12].addEventListener(
         "touchstart",
@@ -211,8 +211,10 @@ class ControlPanel {
     else window.addEventListener("wheel", this.camera.zoomHandlerPC);
   }
 
+  // a series of setters
   _setFly() {
     if (this.car.isStopped()) this.car.fly = !this.car.fly;
+
     if (!this.car.fly) this.car.state.fluctuate = false;
   }
 
@@ -241,71 +243,59 @@ class ControlPanel {
   addCube() {
     this.cubesText =
       ++this.cubes == 10 ? "Cubes: 10. YOU WIN!" : "Cubes: " + this.cubes;
+    // add handler to set a win?
   }
 
-  // different if is on the phone or pc
+  // draw panel only for pc version
   drawPanel() {
-    if (this.mobile) {
-    } else {
-      this.drawPCPanel();
-    }
+    if (!this.mobile) this._drawPCPanel();
   }
 
-  drawPCPanel() {
+  _drawPCPanel() {
     // update colors
     if (this.enabled) this._updateColors();
 
     // Clear the 2D canvas
-    let offset = 60; // on y
-
     this.ctx.clearRect(10, 10, this.ctx.canvas.width, this.ctx.canvas.height);
-    // draw only if something has changed
-    // if (changed){}
 
     // title
     this.ctx.font = "20px Arial";
     this.ctx.strokeText(this.title, 10, 30, 200);
 
-    // shortcuts
-    this.ctx.font = "17px Arial";
-    this.ctx.fillStyle = "blue";
-    this.ctx.fillText("SHORTCUTS:", 10, offset, 200);
+    this._drawSections("SHORTCUTS", this.shortcuts);
+    this._drawSections("ADVANCED SETTINGS", this.advancedSettings);
 
-    this.ctx.font = "15px Arial";
-    this.shortcuts.forEach(({ text, color }) => {
-      this.ctx.fillStyle = colors[color];
-      offset += 20;
-      this.ctx.fillText(text, 10, offset, 200);
-    });
-
-    // advanced settings
-    // shortcuts
-    this.ctx.font = "17px Arial";
-    this.ctx.fillStyle = "blue";
-
-    offset += 30;
-    this.ctx.fillText("Advanced settings:", 10, offset, 200);
-
-    this.ctx.font = "15px Arial";
-    1;
-    this.advancedSettings.forEach(({ text, color }) => {
-      this.ctx.fillStyle = colors[color];
-      offset += 20;
-      this.ctx.fillText(text, 10, offset, 200);
-    });
     // cubes
     this.ctx.font = "17px Arial";
     this.ctx.fillStyle = "blue";
+    this.ctx.fillText(this.cubesText, 10, this.offset, 200);
 
-    offset += 40;
-    this.ctx.fillText(this.cubesText, 10, offset, 200);
+    // reset offset
+    this.offset = 60;
+  }
+
+  _drawSections(title, sections) {
+    this.ctx.font = "17px Arial";
+    this.ctx.fillStyle = "blue";
+    this.ctx.fillText(title, 10, this.offset, 200);
+
+    this.ctx.font = "15px Arial";
+
+    sections.forEach(({ text, color }) => {
+      this.ctx.fillStyle = colors[color];
+      this.offset += 20;
+      this.ctx.fillText(text, 10, this.offset, 200);
+    });
+
+    this.offset += 30;
   }
 
   _updateColors() {
+    this.shortcuts[0].color = 0;
+
     if (this.camera.firstPerson) {
       this.shortcuts[1].color = 1;
       this.shortcuts[2].color = 1;
-
       this.shortcuts[3].color = 2;
     } else {
       // f(ollow)
