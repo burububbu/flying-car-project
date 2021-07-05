@@ -36,6 +36,9 @@ async function main() {
       "firstPersonCommand",
       "cameraFollowCommand",
       "cameraRotateCommand",
+
+      "zoomInCommand",
+      "zoomOutCommand",
     ].forEach((command) => {
       commands.push(document.getElementById(command));
     });

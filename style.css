@@ -27,19 +27,34 @@ body {
 }
 
 .controlPanelMobile {
-  background-color: rgba(188, 227, 236, 0.699);
-
   position: absolute;
-  left: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
   bottom: 20px;
 
-  width: fit-content;
+  width: 100%;
   height: fit-content;
 }
 
+.settingsMobile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+
+  align-items: flex-end;
+
+  left: 10px;
+}
+
+.zoomSettings {
+  display: flex;
+
+  flex-direction: column;
+}
+
 .panelImage {
-  pointer-events: visiblePainted;
-  user-select: none;
   width: 55px;
   height: 55px;
 }

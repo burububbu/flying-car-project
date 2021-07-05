@@ -65,12 +65,18 @@ class ControlPanel {
     //   "leftCommand",
     //   "rightCommand",
 
-    // "upLeftCommand",
-    // "upRightCommand",
-    // "downLeftCommand",
-    // "downRightCommand",
+    //   "upLeftCommand",
+    //   "upRightCommand",
+    //   "downLeftCommand",
+    //   "downRightCommand",
 
     //   "flyCommand",
+    //   "firstPersonCommand",
+    //   "cameraFollowCommand",
+    //   "cameraRotateCommand",
+
+    //   "zoomInCommand",
+    //   "zoomOutCommand",
     // ]
 
     this.commands.slice(0, 4).forEach((command, ind) => {
@@ -109,6 +115,10 @@ class ControlPanel {
 
     this.commands[10].addEventListener("touchstart", () => {
       this._setFollow();
+    });
+
+    this.commands[11].addEventListener("touchstart", () => {
+      this._setRotate();
     });
 
     this.commands[11].addEventListener("touchstart", () => {
@@ -173,7 +183,6 @@ class ControlPanel {
 
     // user doesn't hold the mouse
     window.addEventListener(events[2], () => {
-      console.log("up");
       if (!this.firstPerson)
         window.removeEventListener(
           events[1],
@@ -183,10 +192,18 @@ class ControlPanel {
         );
     });
 
-    if (!this.mobile) {
-      // zoom in zoom out
-      window.addEventListener("wheel", this.camera.zoomHandlerPC);
+    if (this.mobile) {
+      this.commands[12].addEventListener(
+        "touchstart",
+        this.camera.zoomInHandlerMobile
+      );
+      this.commands[13].addEventListener(
+        "touchstart",
+        this.camera.zoomOutHandlerMobile
+      );
     }
+    // zoom in zoom out
+    else window.addEventListener("wheel", this.camera.zoomHandlerPC);
   }
 
   _setFly() {

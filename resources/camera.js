@@ -145,6 +145,16 @@ class Camera {
         if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.008;
       this._updateCartesianCoord();
     };
+
+    this.zoomInHandlerMobile = (e) => {
+      if (!this.firstPerson && this.D > 5) this.D -= 0.5;
+      this._updateCartesianCoord();
+    };
+
+    this.zoomOutHandlerMobile = (e) => {
+      if (!this.firstPerson && this.D > 5) this.D += 0.5;
+      this._updateCartesianCoord();
+    };
   }
 }
 
