@@ -18,7 +18,7 @@ const setView = {
   zFar: 4000,
   fieldOfView: 60,
 };
-const possibleY = [0.5, 3];
+const possibleY = [1, 3.5];
 
 class Scene {
   constructor(gl, programInfo, programInfoSkybox, lightPosition, cam) {
@@ -37,6 +37,10 @@ class Scene {
     this.lightPosition = lightPosition;
 
     this.firstStart = true;
+
+    // bump mapping handler
+    this.lastBumpMapping = true;
+    this.bumpMaps = { terrain: undefined, cube: undefined };
   }
 
   // load scene  objects
@@ -52,16 +56,18 @@ class Scene {
     commands
   ) {
     this._loadBackground(path + backgroundFolder);
+    // load control panel
+    this.controlPanel = new ControlPanel(controlCanvas, commands);
 
     await this._loadGround(path, groundFile);
-    await this._loadCar(path, carFile);
+    await this._loadCar(path, carFile); // not normal map
     await this._loadCube(path, cubeFile);
 
+    this.controlPanel.initPanel(this.camera, this.car);
+
+    this._handleBumpMapping();
+
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
-
-    // load control panel
-    this.controlPanel = new ControlPanel(controlCanvas, this.camera, this.car, commands);
-
     // this.firstStartCameraAnimation();
   }
 
@@ -77,6 +83,8 @@ class Scene {
   }
 
   render() {
+    this._handleBumpMapping();
+
     webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
     if (this.controlPanel.ctx)
       webglUtils.resizeCanvasToDisplaySize(this.controlPanel.ctx.canvas);
@@ -153,9 +161,33 @@ class Scene {
   }
 
   async _loadGround(path, groundFile) {
-    let groundRes = await this._loadParts(path, groundFile, true);
+    let groundRes = await this._loadParts(path, groundFile, true, true);
+
     this.ground = groundRes.parts;
     this.groundExtents = groundRes.extents; // i'm only interested in x and z
+    this.bumpMaps.terrain = groundRes.bumpMap; // save bump map
+  }
+
+  _handleBumpMapping() {
+    if (this.controlPanel.bumpMapping != this.lastBumpMapping) {
+      this.lastBumpMapping = this.controlPanel.bumpMapping;
+
+      // ground
+      this.ground.forEach(({ parts, _ }) => {
+        // for each material name, check is the material of the part
+        parts.material.normalMap = this.lastBumpMapping
+          ? this.bumpMaps.terrain[parts.material.name]
+          : this.defaults.textures.defaultNormal;
+      });
+
+      // cube
+      this.cube.forEach(({ parts, _ }) => {
+        // for each material name, check is the material of the part
+        parts.material.normalMap = this.lastBumpMapping
+          ? this.bumpMaps.cube[parts.material.name]
+          : this.defaults.textures.defaultNormal;
+      });
+    }
   }
 
   // path -> folder with photos
@@ -194,9 +226,11 @@ class Scene {
   async _loadCube(path, cubeFile) {
     this.cubeTranslation = [0, 0, 0]; // initialize first translation
 
-    let cubeRes = await this._loadParts(path, cubeFile, true);
+    let cubeRes = await this._loadParts(path, cubeFile, true, true);
+
     this.cube = cubeRes.parts;
     this.cubeExtents = cubeRes.extents;
+    this.bumpMaps.cube = cubeRes.bumpMap; // save bump map
 
     this._changePositionCube();
   }
@@ -223,7 +257,7 @@ class Scene {
   }
 
   // obj file must be in a folder with the same name
-  async _loadParts(path, filename, getExtents) {
+  async _loadParts(path, filename, getExtents, getBumpMaps) {
     let realpath = path + filename + "/";
     let extents = [];
 
@@ -236,11 +270,18 @@ class Scene {
       extents = utils.getGeometriesExtents(obj.geometries);
     }
 
-    loadTextures(this.gl, materials, realpath, this.defaults.textures); // modify materials, added textures
+    let bumpMaps = loadTextures(
+      this.gl,
+      materials,
+      realpath,
+      this.defaults.textures,
+      getBumpMaps
+    ); // modify materials, added textures
 
     return {
       parts: getParts(this.gl, obj, materials, this.defaults.materials),
       extents: extents,
+      bumpMap: bumpMaps,
     };
     // uniforms:
     // programInfo:

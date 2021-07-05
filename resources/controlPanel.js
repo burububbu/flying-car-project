@@ -14,26 +14,29 @@ const colors = ["black", "grey", "green"];
 
 class ControlPanel {
   // maybe main canvas isn't useful, use window
-  constructor(controlPanel, camera, car, commands) {
-    this.camera = camera;
-    this.car = car;
+  constructor(controlPanel, commands) {
     this.cubes = 0;
+    this.bumpMapping = false;
 
     this.mobile = isMobileDevice();
     this.commands = commands;
 
-    if (this.mobile) {
-      // if non è ruotato, chiedi di ruotare
-      this.commands = commands;
-
-      this.initMobileVersion();
-    } else this.initPCVersion(controlPanel);
-
     this.enabled = false;
+
+    this.controlPanel = controlPanel;
   }
 
-  initPCVersion(controlPanel) {
-    this.ctx = controlPanel.getContext("2d");
+  initPanel(camera, car) {
+    this.camera = camera;
+    this.car = car;
+
+    if (this.mobile) {
+      this.initMobileVersion();
+    } else this.initPCVersion();
+  }
+
+  initPCVersion() {
+    this.ctx = this.controlPanel.getContext("2d");
 
     this.title = "Flying car project";
     this.cubesText = "Cubes: 0";
@@ -45,6 +48,8 @@ class ControlPanel {
       { text: "P: first person", color: 1 },
       { text: "Y: fly (active if car is stopped)", color: 1 },
     ];
+
+    this.advancedSettings = [{ text: "M: active bump mapping", color: 1 }];
   }
 
   initMobileVersion() {}
@@ -141,6 +146,9 @@ class ControlPanel {
           break;
         case "p":
           this._setFP();
+          break;
+        case "m":
+          this.bumpMapping = !this.bumpMapping;
           break;
         default:
           break;
@@ -273,6 +281,21 @@ class ControlPanel {
       this.ctx.fillText(text, 10, offset, 200);
     });
 
+    // advanced settings
+    // shortcuts
+    this.ctx.font = "17px Arial";
+    this.ctx.fillStyle = "blue";
+
+    offset += 30;
+    this.ctx.fillText("Advanced settings:", 10, offset, 200);
+
+    this.ctx.font = "15px Arial";
+    1;
+    this.advancedSettings.forEach(({ text, color }) => {
+      this.ctx.fillStyle = colors[color];
+      offset += 20;
+      this.ctx.fillText(text, 10, offset, 200);
+    });
     // cubes
     this.ctx.font = "17px Arial";
     this.ctx.fillStyle = "blue";
@@ -301,6 +324,8 @@ class ControlPanel {
 
     //(fl)y
     this.shortcuts[4].color = this.car.isStopped() ? (this.car.fly ? 2 : 0) : 1; // grey
+
+    this.advancedSettings[0].color = this.bumpMapping ? 2 : 0;
   }
 }
 

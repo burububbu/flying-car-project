@@ -197,11 +197,13 @@ function _computeTangents(position, texcoord, indices) {
 }
 
 // load, create and asoiate textures to *map fields
-export function loadTextures(gl, materials, path) {
+export function loadTextures(gl, materials, path, returnBumpMap) {
   // create only to check if a texture with the same name is already loaded
   let textures = {};
 
-  for (let material of Object.values(materials)) {
+  let bumpMaps = {}; // materialName = normalTexture
+
+  for (let [materialName, material] of Object.entries(materials)) {
     Object.entries(material)
       .filter(([key]) => key.endsWith("Map"))
       .forEach(([key, filename]) => {
@@ -213,8 +215,14 @@ export function loadTextures(gl, materials, path) {
         }
 
         material[key] = texture; // the modify is propagated
+
+        if (returnBumpMap && key == "normalMap") {
+          bumpMaps[materialName] = texture;
+        }
       });
   }
+
+  if (returnBumpMap) return bumpMaps;
 }
 
 // create bufferInfo and material info for each geometry in geometries
@@ -230,6 +238,7 @@ export function getParts(gl, obj, materials, defaultMaterial) {
     return {
       parts: {
         material: {
+          name: material,
           ...defaultMaterial,
           ...materials[material],
         },
@@ -260,7 +269,6 @@ export function getDefault(gl) {
 
   return { textures: defaultTextures, materials: defaultMaterial };
 }
-
 // get a quad that covers the entire clip space
 export function getQuad() {
   return {
