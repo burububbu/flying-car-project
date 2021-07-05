@@ -14,7 +14,7 @@ const colors = ["black", "grey", "green"];
 
 class ControlPanel {
   // maybe main canvas isn't useful, use window
-  constructor(controlPanel, commands) {
+  constructor(gameCanvas, controlPanel, commands) {
     this.cubes = 0;
     this.bumpMapping = false;
 
@@ -24,6 +24,7 @@ class ControlPanel {
     this.enabled = false;
 
     this.controlPanel = controlPanel;
+    this.gameCanvas = gameCanvas;
   }
 
   initPanel(camera, car) {
@@ -172,11 +173,11 @@ class ControlPanel {
       : ["mousedown", "mousemove", "mouseup"];
 
     // user hold down the mouse
-    window.addEventListener(events[0], () => {
+    this.gameCanvas.addEventListener(events[0], () => {
       if (!this.firstPerson) {
         // update current mouse position
         // this.lastPosition = [event.pageX, event.pageY];
-        window.addEventListener(
+        this.gameCanvas.addEventListener(
           events[1],
           this.mobile
             ? this.camera.moveHandlerMobile
@@ -186,9 +187,9 @@ class ControlPanel {
     });
 
     // user doesn't hold the mouse
-    window.addEventListener(events[2], () => {
+    this.gameCanvas.addEventListener(events[2], () => {
       if (!this.firstPerson)
-        window.removeEventListener(
+        this.gameCanvas.removeEventListener(
           events[1],
           this.mobile
             ? this.camera.moveHandlerMobile

@@ -21,7 +21,14 @@ const setView = {
 const possibleY = [1, 3.5];
 
 class Scene {
-  constructor(gl, programInfo, programInfoSkybox, lightPosition, cam) {
+  constructor(
+    gl,
+    programInfo,
+    programInfoSkybox,
+    lightPosition,
+    cam,
+    gameCanvas
+  ) {
     // create camera
     this.camera = new Camera(cam.D, cam.theta, cam.phi, cam.up, cam.target);
 
@@ -41,6 +48,9 @@ class Scene {
     // bump mapping handler
     this.lastBumpMapping = true;
     this.bumpMaps = { terrain: undefined, cube: undefined };
+
+    // set canvas
+    this.gameCanvas = gameCanvas;
   }
 
   // load scene  objects
@@ -57,7 +67,11 @@ class Scene {
   ) {
     this._loadBackground(path + backgroundFolder);
     // load control panel
-    this.controlPanel = new ControlPanel(controlCanvas, commands);
+    this.controlPanel = new ControlPanel(
+      this.gameCanvas,
+      controlCanvas,
+      commands
+    );
 
     await this._loadGround(path, groundFile);
     await this._loadCar(path, carFile); // not normal map
