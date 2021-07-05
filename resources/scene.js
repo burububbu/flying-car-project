@@ -43,8 +43,6 @@ class Scene {
 
     this.lightPosition = lightPosition;
 
-    this.firstStart = true;
-
     // bump mapping handler
     this.lastBumpMapping = true;
     this.bumpMaps = { terrain: undefined, cube: undefined };
@@ -82,21 +80,35 @@ class Scene {
     this._handleBumpMapping();
 
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
-    // this.firstStartCameraAnimation();
   }
 
-  firstStartCameraAnimation() {
+  _firstStartCameraAnimation() {
     this.camera.addTheta(utils.degToRad(1));
     this.camera.addD(-0.1);
+    this._render();
 
-    if (this.camera.theta >= utils.degToRad(180)) {
-      // 180 + 360
-      this.firstStart = false;
-      this.controlPanel.enablePanel();
+    if (this.camera.theta <= utils.degToRad(180)) {
+      requestAnimationFrame(this._firstStartCameraAnimation.bind(this));
     }
   }
 
+  _gameAnimation() {
+    this._render();
+
+    requestAnimationFrame(this._gameAnimation.bind(this));
+  }
+
   render() {
+    // do first animation
+    this._firstStartCameraAnimation();
+    // enable controllers
+    this.controlPanel.enablePanel();
+    // init game
+    this._gameAnimation();
+  }
+
+  _render() {
+    console.log("render");
     this._handleBumpMapping();
 
     webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
@@ -104,10 +116,6 @@ class Scene {
       webglUtils.resizeCanvasToDisplaySize(this.controlPanel.ctx.canvas);
 
     this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-
-    if (this.firstStart) {
-      this.firstStartCameraAnimation();
-    }
 
     // --------- draw the control panel --------------
     this.controlPanel.drawPanel();
@@ -171,7 +179,7 @@ class Scene {
     webglUtils.setUniforms(this.programInfoSkybox, sharedUniformsSkyBox);
     webglUtils.drawBufferInfo(this.gl, this.background.bufferInfo);
 
-    requestAnimationFrame(this.render.bind(this));
+    // requestAnimationFrame(this._render.bind(this));
   }
 
   async _loadGround(path, groundFile) {
