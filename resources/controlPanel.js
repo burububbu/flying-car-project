@@ -125,10 +125,6 @@ class ControlPanel {
     this.commands[11].addEventListener("touchstart", () => {
       this._setRotate();
     });
-
-    this.commands[11].addEventListener("touchstart", () => {
-      this._setRotate();
-    });
   }
 
   _activeListeners() {
