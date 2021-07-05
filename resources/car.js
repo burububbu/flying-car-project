@@ -14,7 +14,7 @@ import * as utils from "./utils.js";
 // -------- some constant values used for the computing of steps
 const speedSteering = 3.2; // sterzo
 const speedSteeringReturn = 0.93;
-const accMax = 0.0021; // max accelaration
+const accMax = 0.003; // max acceleration
 
 const speedRotating = 0.7;
 const maxHeight = 3;
@@ -141,6 +141,7 @@ class Car {
         max: [0,0,0]
       }    
     */
+
     this.limits = limits;
   }
 
@@ -313,8 +314,10 @@ class Car {
     let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
 
     if (this.fly) {
-      matrix = m4.zRotate(matrix, -utils.degToRad(this.state.vx * 100));
-      matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 80));
+      console.log(this.state.vx);
+      console.log(this.state.vz);
+      matrix = m4.zRotate(matrix, -utils.degToRad(this.state.vx * 50));
+      matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 50));
     }
 
     matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
