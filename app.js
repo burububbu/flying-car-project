@@ -15,6 +15,7 @@ async function main() {
   };
 
   const canvas = document.getElementById("canvas");
+  const container = document.getElementById("container");
 
   let controlPanel;
   let commands = [];
@@ -22,6 +23,7 @@ async function main() {
   if (utils.isMobileDevice()) {
     controlPanel = document.getElementById("controlPanelMobile");
     [
+      // remove
       "upCommand",
       "downCommand",
       "leftCommand",
@@ -55,12 +57,6 @@ async function main() {
     return;
   }
 
-  // console.log(
-  //   `vendor: ${gl.getParameter(
-  //     gl.getExtension("WEBGL_debug_renderer_info").UNMASKED_RENDERER_WEBGL
-  //   )}`
-  // );
-
   // load shaders and program (two different programs for skybox and all the other objects)
   // 1
   let vSrc = await utils.loadText("./shaders/vertexShader.glsl");
@@ -83,7 +79,8 @@ async function main() {
     lightPosition,
     cameraSettings,
 
-    canvas
+    canvas, // remove
+    container // remove
   );
 
   await scene.loadScene(

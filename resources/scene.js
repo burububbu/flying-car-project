@@ -27,7 +27,8 @@ class Scene {
     programInfoSkybox,
     lightPosition,
     cam,
-    gameCanvas
+    gameCanvas,
+    container
   ) {
     // create camera
     this.camera = new Camera(cam.D, cam.theta, cam.phi, cam.up, cam.target);
@@ -49,6 +50,7 @@ class Scene {
 
     // set canvas
     this.gameCanvas = gameCanvas;
+    this.container = container;
   }
 
   // load scene  objects
@@ -94,21 +96,28 @@ class Scene {
 
   _gameAnimation() {
     this._render();
-
     requestAnimationFrame(this._gameAnimation.bind(this));
   }
 
+  _dismissLoading() {
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("container").style.display = "block";
+  }
+
   render() {
+    this._dismissLoading();
+
     // do first animation
     this._firstStartCameraAnimation();
+
     // enable controllers
     this.controlPanel.enablePanel();
+
     // init game
     this._gameAnimation();
   }
 
   _render() {
-    console.log("render");
     this._handleBumpMapping();
 
     webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
