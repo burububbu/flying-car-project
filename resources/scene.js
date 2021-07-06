@@ -1,5 +1,3 @@
-// scene handler: in this way we can create different scenes
-
 import { Camera } from "./camera.js";
 import { ControlPanel } from "./controlPanel.js";
 import { Car } from "./car.js";
@@ -21,19 +19,12 @@ const setView = {
 const possibleY = [1, 3.5];
 
 class Scene {
-  constructor(
-    gl,
-    programInfo,
-    programInfoSkybox,
-    lightPosition,
-    cam,
-    gameCanvas,
-    container
-  ) {
+  constructor(gl, programInfo, programInfoSkybox, lightPosition, cam) {
+    this.gl = gl;
+    this.lightPosition = lightPosition;
+
     // create camera
     this.camera = new Camera(cam.D, cam.theta, cam.phi, cam.up, cam.target);
-
-    this.gl = gl;
 
     // set programInfos
     this.programInfo = programInfo;
@@ -42,53 +33,38 @@ class Scene {
     // initialize defaults
     this.defaults = getDefault(this.gl);
 
-    this.lightPosition = lightPosition;
-
     // bump mapping handler
     this.lastBumpMapping = true;
     this.bumpMaps = { terrain: undefined, cube: undefined };
-
-    // set canvas
-    this.gameCanvas = gameCanvas;
-    this.container = container;
   }
 
-  // load scene  objects
+  // load scene objects
   async loadScene(
     path, // ./obj/
 
-    groundFile, // terrain -> terrain/terrain.obj
+    // the file names and the folders containing the files must have the same names (e.g terrain -> terrain/terrain.obj)
+    groundFile,
     backgroundFolder, // containing the skybox images
     carFile,
     cubeFile
   ) {
+    // load 4 main components
     this._loadBackground(path + backgroundFolder);
-    // load control panel
-
     await this._loadGround(path, groundFile);
     await this._loadCar(path, carFile); // not normal map
     await this._loadCube(path, cubeFile);
 
+    // load panel (mobile or pc style)
     this.controlPanel = new ControlPanel(this.camera, this.car);
 
-    this._handleBumpMapping();
-
+    // initialize the camera target
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
   }
 
-  _firstStartCameraAnimation() {
-    this.camera.addTheta(utils.degToRad(1));
-    this.camera.addD(-0.1);
-    this._render();
-
-    if (this.camera.theta <= utils.degToRad(180)) {
-      requestAnimationFrame(this._firstStartCameraAnimation.bind(this));
-    }
-  }
-
-  _gameAnimation() {
-    this._render();
-    requestAnimationFrame(this._gameAnimation.bind(this));
+  render() {
+    this._dismissLoading();
+    this._firstStartCameraAnimation(); // do first animation
+    this._gameAnimation(); // init game
   }
 
   _dismissLoading() {
@@ -96,23 +72,29 @@ class Scene {
     document.getElementById("container").style.display = "block";
   }
 
-  render() {
-    this._dismissLoading();
+  _firstStartCameraAnimation() {
+    this.camera.addTheta(utils.degToRad(1));
+    this.camera.addD(-0.1);
 
-    // do first animation
-    this._firstStartCameraAnimation();
+    this._render();
 
-    // enable controllers
-    this.controlPanel.enablePanel();
+    if (this.camera.theta <= utils.degToRad(180)) {
+      requestAnimationFrame(this._firstStartCameraAnimation.bind(this));
+    } else {
+      // enable commands and allow user to use it
+      this.controlPanel.enablePanel();
+    }
+  }
 
-    // init game
-    this._gameAnimation();
+  _gameAnimation() {
+    // wrapper to _render
+    this._render();
+    requestAnimationFrame(this._gameAnimation.bind(this));
   }
 
   _render() {
-    this._handleBumpMapping();
-
     webglUtils.resizeCanvasToDisplaySize(this.gl.canvas);
+
     if (this.controlPanel.ctx)
       webglUtils.resizeCanvasToDisplaySize(this.controlPanel.ctx.canvas);
 
@@ -121,7 +103,7 @@ class Scene {
     // --------- draw the control panel --------------
     this.controlPanel.drawPanel();
 
-    // ---- compute uniforms useful for both programInfos ---
+    // ---- compute uniforms useful for both programInfo ---
     let { sharedUniformsAll, sharedUniformsSkyBox } =
       this._computeSharedUniforms();
 
@@ -150,6 +132,9 @@ class Scene {
     // update cube world matrix, handle collision with car
     this._cubeHandler();
 
+    // set or unset bump textures
+    this._handleBumpMapping();
+
     for (let { parts, uniforms } of [
       ...this.ground,
       ...this.car.carSections.flat(),
@@ -164,8 +149,8 @@ class Scene {
       webglUtils.setUniforms(this.programInfo, uniforms, parts.material);
       webglUtils.drawBufferInfo(this.gl, parts.bufferInfo);
     }
-    //--------- draw the skybox -----------------
 
+    //--------- draw the skybox -----------------
     // let our quad pass the depth test at 1.0
     this.gl.depthFunc(this.gl.LEQUAL);
 
@@ -179,16 +164,6 @@ class Scene {
 
     webglUtils.setUniforms(this.programInfoSkybox, sharedUniformsSkyBox);
     webglUtils.drawBufferInfo(this.gl, this.background.bufferInfo);
-
-    // requestAnimationFrame(this._render.bind(this));
-  }
-
-  async _loadGround(path, groundFile) {
-    let groundRes = await this._loadParts(path, groundFile, true, true);
-
-    this.ground = groundRes.parts;
-    this.groundExtents = groundRes.extents; // i'm only interested in x and z
-    this.bumpMaps.terrain = groundRes.bumpMap; // save bump map
   }
 
   _handleBumpMapping() {
@@ -197,7 +172,6 @@ class Scene {
 
       // ground
       this.ground.forEach(({ parts, _ }) => {
-        // for each material name, check is the material of the part
         parts.material.normalMap = this.lastBumpMapping
           ? this.bumpMaps.terrain[parts.material.name]
           : this.defaults.textures.defaultNormal;
@@ -205,12 +179,19 @@ class Scene {
 
       // cube
       this.cube.forEach(({ parts, _ }) => {
-        // for each material name, check is the material of the part
         parts.material.normalMap = this.lastBumpMapping
           ? this.bumpMaps.cube[parts.material.name]
           : this.defaults.textures.defaultNormal;
       });
     }
+  }
+
+  async _loadGround(path, groundFile) {
+    let groundRes = await this._loadParts(path, groundFile, true, true);
+
+    this.ground = groundRes.parts;
+    this.groundExtents = groundRes.extents; // I'm only interested in x and z
+    this.bumpMaps.terrain = groundRes.bumpMap; // save bump map (the user may ask to activate it)
   }
 
   // path -> folder with photos
@@ -240,10 +221,7 @@ class Scene {
       this.programInfo
     );
 
-    this.car.loadLimits(this.groundExtents); // load terrain limits, the car can't cross them;
-
-    // true ud pc, false if phone or tablet
-    // this.car.activeListeners();
+    this.car.loadLimits(this.groundExtents); // load terrain limits, the car can't cross them
   }
 
   async _loadCube(path, cubeFile) {
@@ -255,7 +233,7 @@ class Scene {
     this.cubeExtents = cubeRes.extents;
     this.bumpMaps.cube = cubeRes.bumpMap; // save bump map
 
-    this._changePositionCube();
+    this._changePositionCube(); // first time
   }
 
   _changePositionCube() {
@@ -299,21 +277,20 @@ class Scene {
       realpath,
       this.defaults.textures,
       getBumpMaps
-    ); // modify materials, added textures
+    ); // modify materials, added textures, optionally return the bump textures
 
     return {
       parts: getParts(this.gl, obj, materials, this.defaults.materials),
       extents: extents,
       bumpMap: bumpMaps,
     };
-    // uniforms:
-    // programInfo:
   }
 
   _cubeHandler() {
     for (let { _, uniforms } of this.cube) {
       uniforms.u_world = m4.yRotate(uniforms.u_world, utils.degToRad(1));
     }
+
     let minValues = this.cubeExtents.min.map(
       (value, index) => value + this.cubeTranslation[index]
     );
@@ -329,6 +306,7 @@ class Scene {
       })
     ) {
       this._changePositionCube();
+
       this.controlPanel.addCube();
     }
   }
