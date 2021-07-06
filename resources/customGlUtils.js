@@ -1,5 +1,5 @@
-// create a texture formed by a single color (pixel = [r,g,b,alpha])
 export function create1PixelTexture(gl, pixel) {
+  // create a texture formed by a single color (pixel = [r,g,b,alpha])
   let texture = gl.createTexture();
 
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -18,12 +18,11 @@ export function create1PixelTexture(gl, pixel) {
   return texture;
 }
 
-// create texture from an image
 export function createTexture(gl, source) {
-  // default texture (only one color)
-  let texture = create1PixelTexture(gl, [100, 192, 255, 255]);
+  // create texture from an image
 
-  // load an image asynchronously
+  let texture = create1PixelTexture(gl, [100, 192, 255, 255]); // default texture
+
   let image = new Image();
   image.src = source;
 
@@ -123,34 +122,14 @@ export function createCubeMapTexture(gl, path) {
   return texture;
 }
 
-// necessary because mipmaps are not handled well for not 2-power images by webgl
+// necessary because webgl doesn't handle well not 2-power images
 export function _isPowerOf2(number) {
   return (number & (number - 1)) === 0;
 }
 
-function _makeIndexIterator(indices) {
-  let ndx = 0;
-  let fn = () => indices[ndx++];
-  fn.reset = () => {
-    ndx = 0;
-  };
-  fn.numElements = indices.length;
-  return fn;
-}
-
-function _makeUnindexedIterator(positions) {
-  let ndx = 0;
-  let fn = () => ndx++;
-  fn.reset = () => {
-    ndx = 0;
-  };
-  fn.numElements = positions.length / 3;
-  return fn;
-}
-
-let subtractVector2 = (a, b) => a.map((v, ndx) => v - b[ndx]);
-
 function _computeTangents(position, texcoord, indices) {
+  // need it for bump mapping
+
   let getNextIndex = indices
     ? _makeIndexIterator(indices)
     : _makeUnindexedIterator(position);
@@ -195,12 +174,31 @@ function _computeTangents(position, texcoord, indices) {
 
   return tangents;
 }
+function _makeIndexIterator(indices) {
+  let ndx = 0;
+  let fn = () => indices[ndx++];
+  fn.reset = () => {
+    ndx = 0;
+  };
+  fn.numElements = indices.length;
+  return fn;
+}
 
-// load, create and asoiate textures to *map fields
+function _makeUnindexedIterator(positions) {
+  let ndx = 0;
+  let fn = () => ndx++;
+  fn.reset = () => {
+    ndx = 0;
+  };
+  fn.numElements = positions.length / 3;
+  return fn;
+}
+
+let subtractVector2 = (a, b) => a.map((v, ndx) => v - b[ndx]);
+
 export function loadTextures(gl, materials, path, returnBumpMap) {
-  // create only to check if a texture with the same name is already loaded
+  // load, create and associate textures to *map fields
   let textures = {};
-
   let bumpMaps = {}; // materialName = normalTexture
 
   for (let [materialName, material] of Object.entries(materials)) {
@@ -225,12 +223,13 @@ export function loadTextures(gl, materials, path, returnBumpMap) {
   if (returnBumpMap) return bumpMaps;
 }
 
-// create bufferInfo and material info for each geometry in geometries
-// returns list  [element1, element2] where element = {bufferInfo, material}
 export function getParts(gl, obj, materials, defaultMaterial) {
+  // create bufferInfo and material info for each geometry in geometries
+  // returns list  [element1, element2] where element = {bufferInfo, material}
+
   // obj = {geometries: {material, data}, materialLibs }
   return obj.geometries.map(({ material, data }) => {
-    // generate tangents if we have  data to do this (surface normal + coor of the bump map texture)
+    // generate tangents if we have data to do this (surface normal + coor of the bump map texture)
     if (data.texcoord && data.normal)
       data.tangent = _computeTangents(data.position, data.texcoord);
     else data.tangent = [1, 0, 0]; // default
@@ -269,8 +268,9 @@ export function getDefault(gl) {
 
   return { textures: defaultTextures, materials: defaultMaterial };
 }
-// get a quad that covers the entire clip space
+
 export function getQuad() {
+  // get a quad that covers the entire clip space
   return {
     position: {
       numComponents: 2,

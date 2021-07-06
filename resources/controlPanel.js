@@ -124,7 +124,7 @@ class ControlPanel {
   _activePCListeners() {
     //handle shortcuts
     window.addEventListener("keydown", (e) => {
-      switch (e.key) {
+      switch (e.key.toLowerCase()) {
         case "f":
           this._setFollow();
           break;
@@ -147,13 +147,13 @@ class ControlPanel {
 
     // car movement handler
     window.addEventListener("keydown", (e) => {
-      let ind = ["w", "s", "a", "d"].indexOf(e.key);
+      let ind = ["w", "s", "a", "d"].indexOf(e.key.toLowerCase());
 
       if (ind > -1) this.car.keys[ind] = true;
     });
 
     window.addEventListener("keyup", (e) => {
-      let ind = ["w", "s", "a", "d"].indexOf(e.key);
+      let ind = ["w", "s", "a", "d"].indexOf(e.key.toLowerCase());
       if (ind > -1) this.car.keys[ind] = false;
     });
   }

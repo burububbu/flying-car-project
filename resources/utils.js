@@ -1,4 +1,3 @@
-// utils
 import { parseOBJ, parseMTL } from "./objMTLReader.js";
 
 async function loadText(path) {
@@ -24,7 +23,7 @@ async function loadOBJ(path, name) {
   for (let filename of dataOBJ.materialLibs) {
     textMTL += "\n" + (await loadText(path + filename));
   }
-  let dataMTL = parseMTL(textMTL); // material characteristics  = {diffue: -, kaMap: filnename}
+  let dataMTL = parseMTL(textMTL);
 
   return [dataOBJ, dataMTL];
 }
@@ -65,7 +64,7 @@ function isMobileDevice() {
   return navigator.userAgent.match(/Android | iPhone/);
 }
 
-// phi have to be  0 < phi < pi
+// phi have to be  0 < phi < (pi - 10°)
 function phiCheck(phi, dr) {
   let newPhi = phi + dr;
   return newPhi + dr >= degToRad(20) && newPhi <= degToRad(80) ? newPhi : phi;

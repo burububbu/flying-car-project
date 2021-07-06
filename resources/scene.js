@@ -48,23 +48,20 @@ class Scene {
     carFile,
     cubeFile
   ) {
-    // load 4 main components
     this._loadBackground(path + backgroundFolder);
     await this._loadGround(path, groundFile);
     await this._loadCar(path, carFile); // not normal map
     await this._loadCube(path, cubeFile);
 
-    // load panel (mobile or pc style)
     this.controlPanel = new ControlPanel(this.camera, this.car);
 
-    // initialize the camera target
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
   }
 
   render() {
     this._dismissLoading();
-    this._firstStartCameraAnimation(); // do first animation
-    this._gameAnimation(); // init game
+    this._firstStartCameraAnimation();
+    this._gameAnimation();
   }
 
   _dismissLoading() {
