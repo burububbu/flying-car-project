@@ -1,16 +1,7 @@
-// not only the ontrol canvas but also the values to control (change the car, change the background, the ground, camera settings)
-// car movement handled directly y the car
-
 import { isMobileDevice } from "./utils.JS";
 
-// has the camera object
-
-/*
-black: i can use this functionality but i have not activate it
-grey: i can't use the functionality
-green: i have activated the functionality
-*/
 const colors = ["black", "grey", "green"];
+
 const commandNames = [
   "upCommand",
   "downCommand",
@@ -154,7 +145,7 @@ class ControlPanel {
       }
     });
 
-    // car handler
+    // car movement handler
     window.addEventListener("keydown", (e) => {
       let ind = ["w", "s", "a", "d"].indexOf(e.key);
 
@@ -211,7 +202,7 @@ class ControlPanel {
     else window.addEventListener("wheel", this.camera.zoomHandlerPC);
   }
 
-  // a series of setters
+  // a series of setters shared by pc and mobile commands
   _setFly() {
     if (this.car.isStopped()) this.car.fly = !this.car.fly;
 
@@ -243,7 +234,6 @@ class ControlPanel {
   addCube() {
     this.cubesText =
       ++this.cubes == 10 ? "Cubes: 10. YOU WIN!" : "Cubes: " + this.cubes;
-    // add handler to set a win?
   }
 
   // draw panel only for pc version
@@ -258,14 +248,12 @@ class ControlPanel {
     // Clear the 2D canvas
     this.ctx.clearRect(10, 10, this.ctx.canvas.width, this.ctx.canvas.height);
 
-    // title
     this.ctx.font = "20px Arial";
     this.ctx.strokeText(this.title, 10, 30, 200);
 
     this._drawSections("SHORTCUTS", this.shortcuts);
     this._drawSections("ADVANCED SETTINGS", this.advancedSettings);
 
-    // cubes
     this.ctx.font = "17px Arial";
     this.ctx.fillStyle = "blue";
     this.ctx.fillText(this.cubesText, 10, this.offset, 200);
@@ -315,6 +303,7 @@ class ControlPanel {
     //(fl)y
     this.shortcuts[4].color = this.car.isStopped() ? (this.car.fly ? 2 : 0) : 1; // grey
 
+    // bump mapping
     this.advancedSettings[0].color = this.bumpMapping ? 2 : 0;
   }
 }

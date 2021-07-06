@@ -4,7 +4,7 @@ import * as utils from "./utils.js";
 // -------- some constant values used for the computing of steps
 const speedSteering = 3.2; // sterzo
 const speedSteeringReturn = 0.93;
-const accMax = 0.003; // max acceleration
+const accMax = 0.0025; // max acceleration
 
 const speedRotating = 0.7;
 const maxHeight = 3;
@@ -303,14 +303,25 @@ class Car {
 
   _updateMatrices() {
     // base matrix (relative to the body)
-    let matrix = m4.translation(this.state.px, this.state.py, this.state.pz); // translate to the actual position
+    let matrix = m4.translation(
+      this.state.px,
+      this.state.py + this.centers[0][1],
+      this.state.pz
+    ); // translate to the actual position
 
     if (this.fly) {
-      matrix = m4.zRotate(matrix, -utils.degToRad(this.state.vx * 50));
-      matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 50));
+      matrix = m4.zRotate(matrix, -utils.degToRad(this.state.vx * 30));
+      matrix = m4.xRotate(matrix, utils.degToRad(this.state.vz * 30));
     }
 
     matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
+
+    matrix = m4.translate(
+      matrix,
+      -this.centers[0][0],
+      -this.centers[0][1],
+      -this.centers[0][2]
+    );
 
     // update body
     this._updateAllWorldMatrices(0, matrix);
@@ -374,8 +385,8 @@ class Car {
   getFirstPerson() {
     // get the more higher point of the car
     return [
-      this.state.px + 0.1,
-      this.state.py + this.extents.front[1] + 0.3,
+      this.state.px,
+      this.state.py + this.extents.front[1],
       this.state.pz,
     ];
   }
