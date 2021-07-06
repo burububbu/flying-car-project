@@ -1,10 +1,10 @@
-import { degToRad, isMobileDevice, phiCheck } from "./utils.js";
+import { degToRad, phiCheck } from "./utils.js";
 
 const rad360 = Math.PI * 2;
-const dr = degToRad(1.5); // if odd then change phi condition with newPhi + dr > 0 && newPhi <= Math.PI
+const dr = degToRad(1.5);
 class Camera {
   constructor(D, theta, phi, up, target) {
-    // spherical coords
+    // camera spherical coords
     this.D = D;
     this.theta = theta;
     this.phi = phi;
@@ -12,38 +12,37 @@ class Camera {
     // view up vector
     this.up = up;
 
-    // target
-    this.target = target;
-
     this.cartesianCoord = [0, 0, 0];
-    this._updateCartesianCoord();
 
     // useful for camera moving
     this.lastPosition = [0, 0, 0];
+
+    // target position (cartesian coord)
+    this.target = target;
+
+    // target position (spherical coord), used when camera is set to first person
+    this.targetPhi = degToRad(90);
+    this.targetTheta = degToRad(1);
+    this.targetD = 20;
 
     // handled by control panel
     this.followTarget = false;
     this.rotateWithTarget = false;
     this.firstPerson = false;
 
-    this.targetPhi = degToRad(90);
-    this.targetTheta = degToRad(1);
-    this.targetD = 20;
+    // update coords
+    this._updateCartesianCoord();
 
     // set camera events handler
     this.setHandlers();
   }
 
-  // work with cartesian coordinates
-  setFirstPerson(firstCoor, rotation) {
-    // use spherical coordinates for the target
-    this.cartesianCoord = firstCoor;
-    this.targetTheta = degToRad(rotation);
-    this.target = this.getTargetFirstPerson();
-  }
+  setFirstPerson(cameraPos, rotation) {
+    this.cartesianCoord = cameraPos;
 
-  getTargetFirstPerson() {
-    return this._getCartCoord(
+    // use spherical coordinates for the target (the system center is the camera position)
+    this.targetTheta = degToRad(rotation);
+    this.target = this._getCartCoord(
       this.targetPhi,
       this.targetTheta,
       this.targetD,
@@ -59,17 +58,14 @@ class Camera {
     ];
   }
 
-  // get camera matrix
   getMatrix() {
     return m4.lookAt(this.cartesianCoord, this.target, this.up);
   }
 
   updateTarget(target, rotation) {
-    // update target and rotation of the camera if requested
+    // update target and rotate of the camera if requested
     this.target = target;
-
     if (this.rotateWithTarget) this.theta = degToRad(rotation);
-
     this._updateCartesianCoord();
   }
 
@@ -95,6 +91,7 @@ class Camera {
     this._updateCartesianCoord();
   }
 
+  // described here but activated in controlPanel instance
   setHandlers() {
     this.moveHandlerPC = (event) => {
       if (!this.firstPerson) {
@@ -105,8 +102,8 @@ class Camera {
             : (this.theta = this.theta - (dr % rad360));
         }
 
-        // mouse movement on y axis
         if (event.pageY !== this.lastPosition[1]) {
+          // mouse movement on y axis
           event.pageY < this.lastPosition[1]
             ? (this.phi = phiCheck(this.phi, dr))
             : (this.phi = phiCheck(this.phi, -dr));
@@ -123,13 +120,13 @@ class Camera {
         let touch = event.touches[0];
 
         if (!this.rotateWithTarget && touch.pageX !== this.lastPosition[0]) {
-          touch.pageX > this.lastPosition[0] // % (rad360) because theta have to be between 0 and 2PI (here i check only the latter condition)
+          touch.pageX > this.lastPosition[0]
             ? (this.theta = this.theta + (dr % rad360))
             : (this.theta = this.theta - (dr % rad360));
         }
 
-        // mouse movement on y axis
         if (touch.pageY !== this.lastPosition[1]) {
+          // mouse movement on y axis
           touch.pageY < this.lastPosition[1]
             ? (this.phi = phiCheck(this.phi, dr))
             : (this.phi = phiCheck(this.phi, -dr));
@@ -147,12 +144,12 @@ class Camera {
     };
 
     this.zoomInHandlerMobile = (e) => {
-      if (!this.firstPerson && this.D > 5) this.D -= 0.5;
+      if (!this.firstPerson && this.D > 5) this.D -= 1;
       this._updateCartesianCoord();
     };
 
     this.zoomOutHandlerMobile = (e) => {
-      if (!this.firstPerson && this.D > 5) this.D += 0.5;
+      if (!this.firstPerson && this.D > 5) this.D += 1;
       this._updateCartesianCoord();
     };
   }

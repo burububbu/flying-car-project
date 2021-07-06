@@ -78,7 +78,7 @@ class Scene {
 
     this._render();
 
-    if (this.camera.theta <= utils.degToRad(180)) {
+    if (this.camera.theta <= Math.PI) {
       requestAnimationFrame(this._firstStartCameraAnimation.bind(this));
     } else {
       // enable commands and allow user to use it
