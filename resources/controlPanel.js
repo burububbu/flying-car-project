@@ -294,10 +294,13 @@ class ControlPanel {
     this.shortcuts[0].color = 0;
 
     if (this.camera.firstPerson) {
+      this.shortcuts[3].color = 2;
+
       this.shortcuts[1].color = 1;
       this.shortcuts[2].color = 1;
-      this.shortcuts[3].color = 2;
     } else {
+      this.shortcuts[3].color = 0;
+
       // f(ollow)
       this.shortcuts[1].color = this.camera.followTarget ? 2 : 0;
 
