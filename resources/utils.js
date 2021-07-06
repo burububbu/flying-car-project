@@ -62,15 +62,13 @@ function getRandomArbitrary(min, max) {
 }
 
 function isMobileDevice() {
-  return navigator.userAgent.match(/Android|iPhone/);
+  return navigator.userAgent.match(/Android | iPhone/);
 }
 
 // phi have to be  0 < phi < pi
 function phiCheck(phi, dr) {
   let newPhi = phi + dr;
-  return newPhi + dr >= degToRad(30) && newPhi <= Math.PI / 2 - degToRad(5)
-    ? newPhi
-    : phi;
+  return newPhi + dr >= degToRad(20) && newPhi <= degToRad(80) ? newPhi : phi;
 }
 
 export {
