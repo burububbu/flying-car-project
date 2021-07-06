@@ -1,13 +1,3 @@
-/*
-ORDER
-name         index
-"MainBody",    0
-"LFrontWheel", 1
-"RFrontWheel", 2
-"LBackWheel",  3
-"RBackWheel",  4
-*/
-
 import { getDefault, getParts, loadTextures } from "./customGlUtils.js";
 import * as utils from "./utils.js";
 
@@ -28,21 +18,23 @@ const frictions = [0.8, 1, 0.991]; // if I change the friction on x, the car sli
 
 // NB: max speed = accMax*friction on z / (1-friction on z)
 const radiusFWheel = 0.25; // front wheel
-const grip = 0.45; // how much the vehicle adapts to the steering
+const grip = 0.35; // how much the vehicle adapts to the steering
 
 class Car {
   async load(gl, path, filename) {
     this.defaults = getDefault(gl);
 
+    // centers of each section of the car (main body, wheels)
     this.centers = [
-      [0, 0, 0],
-      [0, 0, 0],
-      [0, 0, 0],
-      [0, 0, 0],
-      [0, 0, 0],
+      [0, 0, 0], // main body
+      [0, 0, 0], // L F wheel
+      [0, 0, 0], // R F wheel
+      [0, 0, 0], // L B wheel
+      [0, 0, 0], // R B wheel
     ];
 
     this.extents = {
+      // car extension (coords of min and max point of the rectangle containing the car)
       front: [
         Number.NEGATIVE_INFINITY,
         Number.NEGATIVE_INFINITY,
@@ -53,33 +45,39 @@ class Car {
         Number.POSITIVE_INFINITY,
         Number.POSITIVE_INFINITY,
       ],
-    }; // min and max value (the car is represented by a rectangle)
+    };
 
-    this.limits = undefined; // ground limits
+    this.limits = undefined; // limits of the ground on wich the car is moving
+    //             w      s      a      d
     this.keys = [false, false, false, false];
-
     this.fly = false;
 
-    // internal car state, modified through time by the doStep method
+    this._resetState();
+
+    // load car parts ["MainBody", "LFrontWheel", "RFrontWheel", "LBackWheel",  "RBackWheel"]
+    this.carSections = await this._loadParts(gl, path, filename);
+  }
+
+  _resetState() {
+    // internal car state, modified through time by doStep method
     this.state = {
-      px: 0, // position
-      py: 0, // position
-      pz: 0, // position
+      // position
+      px: 0,
+      py: 0,
+      pz: 0,
 
       facing: 0, // orientation
       hub: 0, // (mozzo)
       steering: 0,
 
-      vx: 0, // actual speed
-      vy: 0, // actual speed
-      vz: 0, // actual speed
+      // actual speed
+      vx: 0,
+      vy: 0,
+      vz: 0,
 
-      zRotate: 0,
+      zRotate: 0, // rotation for the wheels when the car starts flying
       fluctuate: false,
     };
-
-    // load car parts ["MainBody", "LFrontWheel", "RFrontWheel", "LBackWheel",  "RBackWheel"]
-    this.carSections = await this._loadParts(gl, path, filename);
   }
 
   async _loadParts(gl, path, filename) {
@@ -115,19 +113,19 @@ class Car {
       });
     });
 
-    // compute global min and max (with 0 as origin) (then we have to sum to px  py and pz)
+    // compute global min and max (with 0,0,0 as origin)
     for (let { min, max } of extents) {
       min.forEach((value, ind) => {
-        if (this.extents.back[ind] > value) this.extents.back[ind] = value;
+        if (value < this.extents.back[ind]) this.extents.back[ind] = value;
       });
 
       max.forEach((value, ind) => {
-        if (this.extents.front[ind] < value) this.extents.front[ind] = value;
+        if (value > this.extents.front[ind]) this.extents.front[ind] = value;
       });
     }
 
-    // load tectures in materials
-    loadTextures(gl, materials, path, this.defaults.textures);
+    // load textures in materials
+    loadTextures(gl, materials, path, this.defaults.textures, false);
 
     return carPartsObj.map((part) =>
       getParts(gl, part, materials, this.defaults.materials)
@@ -146,6 +144,7 @@ class Car {
   }
 
   isStopped() {
+    // (or it goes very slow)
     return (
       this.state.vz > -0.01 &&
       this.state.vz < 0.01 &&
@@ -155,9 +154,7 @@ class Car {
   }
 
   isInside() {
-    // based on front wheels and back wheels
-    // i'm interested only in x and z
-
+    // I'm interested only in x and z
     let frontPos = [
       this.extents.front[0] + this.state.px,
       this.extents.front[2] + this.state.pz,
@@ -167,9 +164,6 @@ class Car {
       this.extents.back[0] + this.state.px,
       this.extents.back[2] + this.state.pz,
     ];
-
-    // sia la z min che maz devono essere comprese tra limits.z min e max
-    // sia la z min che maz devono essere comprese tra limits.z min e max
 
     let value =
       this.limits.min[0] <= Math.min(frontPos[0], backPos[0]) &&
@@ -220,13 +214,11 @@ class Car {
     return rMin || rMax;
   }
 
-  // do a physic step of the car (delta-t constant)
+  // do a physic step of the car
   doStep() {
-    // check limits only for x and z
     if (this.limits && !this.isInside()) {
-      this.state.px = 0;
-      this.state.py = 0;
-      this.state.pz = 0;
+      // check limits only for x and z
+      this._resetState();
     } else {
       let vxm, vym, vzm; // car space speed
 
@@ -242,7 +234,6 @@ class Car {
       // steeling handler (based on keys set to true)
       if (this.keys[2]) this.state.steering -= speedSteering; //a
       if (this.keys[3]) this.state.steering += speedSteering; //d
-
       this.state.steering *= speedSteeringReturn;
 
       if (this.keys[0]) vzm += accMax; // go ahead
@@ -293,7 +284,7 @@ class Car {
           : this.state.vy + yAdd;
       } else {
         // it's fluctuating
-        this.state.fluctuate = true;
+        this.state.fluctuate = true; // set to false by the control panel when the user disable the fly mode
         toRet = -fluctuateValues[1];
       }
     } else {
@@ -306,6 +297,7 @@ class Car {
   }
 
   getCenter() {
+    // represent the translation value fom the origin
     return [this.state.px, this.state.py, this.state.pz];
   }
 
@@ -319,6 +311,7 @@ class Car {
     }
 
     matrix = m4.yRotate(matrix, utils.degToRad(this.state.facing));
+
     // update body
     this._updateAllWorldMatrices(0, matrix);
 
@@ -378,8 +371,8 @@ class Car {
     );
   }
 
-  // get the more higher point of the car
   getFirstPerson() {
+    // get the more higher point of the car
     return [
       this.state.px + 0.1,
       this.state.py + this.extents.front[1] + 0.3,
@@ -394,6 +387,7 @@ class Car {
   }
 
   _toFromCenter(index, matrix, betweenMatrix) {
+    // return transformation matrix ([to actual positions] x [between transformations] x [to the center])
     let temp_m = m4.translate(matrix, ...this.centers[index]);
 
     betweenMatrix.forEach((mat) => {
