@@ -20,6 +20,17 @@
       <canvas id="canvas" class="canvas"></canvas>
       <canvas id="controlPanelPC" class="controlPanelPC"></canvas>
 
+      <p id="lightControl" class="lightControl">
+        Move the light:
+        <input type="range" value=0 min=-50 max=50 id= 'xLightSlider' disabled= true>
+        <label for= 'xLightSlider'> x </label>  
+        <input type="range" value= 30 min=0 max=50 id= 'yLightSlider' disabled= true>
+        <label for= 'yLightSlider'> y </label>
+        <input type="range" value= 0 min=-50 max=50 id= 'zLightSlider'disabled= true>
+        <label for= 'zLightSlider'> z </label>
+        <button id= 'resetLight' style="background-color: lightskyblue;"> reset </button>
+        </p>
+
       <span id="controlPanelMobile" class="controlPanelMobile">
         <table>
           <tr>
@@ -51,7 +62,6 @@
           <img src="./panel/camera-follow.png" oncontextmenu="return false;" class="panelImage" id='cameraFollowCommand'/>
           <img src="./panel/camera-rotate.png" oncontextmenu="return false;" class="panelImage" id='cameraRotateCommand' />
           <img src="./panel/bump-map.png" oncontextmenu="return false;" class="panelImage" id='bumpMappingCommand' />
-          
         </span>
           
       </span>

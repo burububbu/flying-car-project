@@ -24,7 +24,7 @@ const commandNames = [
 ];
 
 class ControlPanel {
-  constructor(camera, car) {
+  constructor(camera, car, lightPosition) {
     this.cubes = 0;
     this.bumpMapping = false;
     this.enabled = false;
@@ -35,6 +35,9 @@ class ControlPanel {
 
     this.camera = camera;
     this.car = car;
+
+    this.defaultPosition = [...lightPosition]; // shallow copy
+    this.lightPosition = lightPosition;
 
     // set main canvas, commands (mobile version) or control canvas (pc version)
     this.mainCanvas = document.getElementById("canvas");
@@ -70,12 +73,33 @@ class ControlPanel {
   enablePanel() {
     this.enabled = true;
 
-    this._activeCameraListeners(); // unique handler for touch
+    this._activeCameraListeners();
+    this._activeLightListeners();
 
     if (this.mobile) this._activeMobileListeners(this.commands);
     else this._activePCListeners();
   }
 
+  _activeLightListeners() {
+    let sliders = ["xLightSlider", "yLightSlider", "zLightSlider"].map((name) =>
+      document.getElementById(name)
+    );
+
+    sliders.forEach((slider, idx) => {
+      slider.disabled = false;
+      slider.addEventListener("input", () => {
+        this.lightPosition[idx] = Number(slider.value);
+      });
+    });
+
+    document.getElementById("resetLight").addEventListener("click", () => {
+      sliders.forEach(
+        (slider, idx) => (slider.value = this.defaultPosition[idx])
+      );
+
+      this.lightPosition = [...this.defaultPosition];
+    });
+  }
   _activeMobileListeners() {
     // w s a d commands
     this.commands.slice(0, 4).forEach((command, ind) => {

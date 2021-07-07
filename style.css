@@ -16,9 +16,9 @@ body {
 }
 
 .loader {
-  border: 16px solid #f3f3f3; /* Light grey */
-  border-bottom: 16px solid #a385e7; /* Blue */
-  border-top: 16px solid #a385e7; /* Blue */
+  border: 16px solid #f3f3f3;
+  border-bottom: 16px solid #a385e7;
+  border-top: 16px solid #a385e7;
   border-radius: 50%;
   width: 100px;
   height: 100px;
@@ -54,6 +54,31 @@ body {
 .container {
   display: none;
   position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.lightControl {
+  position: absolute;
+  right: 10px;
+
+  height: fit-content;
+  width: fit-content;
+
+  background-color: rgba(188, 227, 236, 0.699);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.pcLightControl {
+  bottom: 10px;
+}
+
+.mobileLightControl {
+  top: 10px;
 }
 
 .canvas {

@@ -19,9 +19,8 @@ const setView = {
 const possibleY = [1, 3.5];
 
 class Scene {
-  constructor(gl, programInfo, programInfoSkybox, lightPosition, cam) {
+  constructor(gl, programInfo, programInfoSkybox, cam) {
     this.gl = gl;
-    this.lightPosition = lightPosition;
 
     // create camera
     this.camera = new Camera(cam.D, cam.theta, cam.phi, cam.up, cam.target);
@@ -46,14 +45,16 @@ class Scene {
     groundFile,
     backgroundFolder, // containing the skybox images
     carFile,
-    cubeFile
+    cubeFile,
+
+    lightPosition
   ) {
     this._loadBackground(path + backgroundFolder);
     await this._loadGround(path, groundFile);
     await this._loadCar(path, carFile); // not normal map
     await this._loadCube(path, cubeFile);
 
-    this.controlPanel = new ControlPanel(this.camera, this.car);
+    this.controlPanel = new ControlPanel(this.camera, this.car, lightPosition);
 
     this.camera.target = this.car.centers[0]; // look at the body of the vehicle
   }
@@ -333,7 +334,7 @@ class Scene {
 
     // aggregate the uniforms
     let sharedUniformsAll = {
-      u_lightPosition: this.lightPosition,
+      u_lightPosition: this.controlPanel.lightPosition,
       u_view: view,
       u_projection: projection,
       u_viewWorldPosition: this.camera.cartesianCoord,

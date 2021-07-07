@@ -11,7 +11,7 @@ function main() {
 }
 
 async function _main() {
-  let lightPosition = [0, 30, 0]; // initial ligth position
+  let lightPosition = [0, 30, 0]; // initial light position
 
   let cameraSettings = {
     D: 40, // D
@@ -23,8 +23,10 @@ async function _main() {
 
   if (utils.isMobileDevice()) {
     document.getElementById("controlPanelPC").style.display = "none";
+    document.getElementById("lightControl").classList.add("mobileLightControl");
   } else {
     document.getElementById("controlPanelMobile").style.display = "none";
+    document.getElementById("lightControl").classList.add("pcLightControl");
   }
 
   const canvas = document.getElementById("canvas");
@@ -53,7 +55,6 @@ async function _main() {
     programInfo,
     programInfoSkybox,
 
-    lightPosition,
     cameraSettings
   );
 
@@ -62,7 +63,9 @@ async function _main() {
     "terrain", // ground
     "skybox", // background
     "DeLorean", // car
-    "Cube" // object
+    "Cube", // object
+
+    lightPosition
   );
 
   scene.render();
