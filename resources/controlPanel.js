@@ -240,8 +240,11 @@ class ControlPanel {
   _setFP() {
     this.camera.firstPerson = !this.camera.firstPerson;
 
-    if (!this.camera.firstPerson) {
-      this.camera.followTarget = !this.camera.followTarget;
+    if (this.camera.firstPerson) {
+      this.camera.followTarget = false;
+      this.camera.rotateWithTarget = false;
+    } else {
+      this.camera.followTarget = true;
       this.camera.rotateWithTarget = false;
     }
   }

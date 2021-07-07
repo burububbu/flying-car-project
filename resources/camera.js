@@ -138,19 +138,24 @@ class Camera {
     };
 
     this.zoomHandlerPC = (event) => {
-      if (!this.firstPerson)
+      if (!this.firstPerson) {
         if (this.D > 5 || event.deltaY < 0) this.D += event.deltaY * -0.008;
-      this._updateCartesianCoord();
+        this._updateCartesianCoord();
+      }
     };
 
     this.zoomInHandlerMobile = (e) => {
-      if (!this.firstPerson && this.D > 5) this.D -= 1;
-      this._updateCartesianCoord();
+      if (!this.firstPerson && this.D > 5) {
+        this.D -= 1;
+        this._updateCartesianCoord();
+      }
     };
 
     this.zoomOutHandlerMobile = (e) => {
-      if (!this.firstPerson && this.D > 5) this.D += 1;
-      this._updateCartesianCoord();
+      if (!this.firstPerson && this.D > 5) {
+        this.D += 1;
+        this._updateCartesianCoord();
+      }
     };
   }
 }
