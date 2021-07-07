@@ -211,7 +211,7 @@ function _parse(line, keywords) {
   let handler = keywords[keyword];
 
   if (!handler) {
-    console.error("unhandled keyword:", keyword);
+    // console.error("unhandled keyword:", keyword);
     return;
   }
 

@@ -96,7 +96,6 @@ class ControlPanel {
       sliders.forEach(
         (slider, idx) => (slider.value = this.defaultPosition[idx])
       );
-
       this.lightPosition = [...this.defaultPosition];
     });
   }
