@@ -69,6 +69,7 @@ body {
 
   display: flex;
   flex-direction: column;
+
   justify-content: space-evenly;
   align-items: center;
 }
@@ -95,6 +96,11 @@ body {
 
   width: 220px;
   height: 40%;
+}
+
+.sliderAndLabel {
+  display: flex;
+  align-items: center;
 }
 
 .controlPanelMobile {
