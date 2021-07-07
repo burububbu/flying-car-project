@@ -70,6 +70,9 @@ function phiCheck(phi, dr) {
   return newPhi + dr >= degToRad(20) && newPhi <= degToRad(80) ? newPhi : phi;
 }
 
+function setVisibility(elements, value) {
+  document.getElementById(elements).style.display = value;
+}
 export {
   loadText,
   degToRad,
@@ -79,4 +82,5 @@ export {
   getRandomArbitrary,
   isMobileDevice,
   phiCheck,
+  setVisibility,
 };

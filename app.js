@@ -3,7 +3,14 @@
 import * as utils from "./resources/utils.js";
 import { Scene } from "./resources/scene.js";
 
-async function main() {
+function main() {
+  // check browser version
+  if (!navigator.userAgent.match(/Chrome\/9[0-1]/)) {
+    _blockExecution();
+  } else _main();
+}
+
+async function _main() {
   let lightPosition = [0, 30, 0]; // initial ligth position
 
   let cameraSettings = {
@@ -14,42 +21,13 @@ async function main() {
     target: [0, 0, 0], // target
   };
 
-  const canvas = document.getElementById("canvas");
-  const container = document.getElementById("container");
-
-  let controlPanel;
-  let commands = [];
-
   if (utils.isMobileDevice()) {
-    controlPanel = document.getElementById("controlPanelMobile");
-    [
-      // remove
-      "upCommand",
-      "downCommand",
-      "leftCommand",
-      "rightCommand",
-
-      "upLeftCommand",
-      "upRightCommand",
-      "downLeftCommand",
-      "downRightCommand",
-
-      "flyCommand",
-      "firstPersonCommand",
-      "cameraFollowCommand",
-      "cameraRotateCommand",
-
-      "zoomInCommand",
-      "zoomOutCommand",
-    ].forEach((command) => {
-      commands.push(document.getElementById(command));
-    });
     document.getElementById("controlPanelPC").style.display = "none";
   } else {
-    controlPanel = document.getElementById("controlPanelPC");
     document.getElementById("controlPanelMobile").style.display = "none";
   }
 
+  const canvas = document.getElementById("canvas");
   const gl = canvas.getContext("webgl");
 
   if (!gl) {
@@ -70,17 +48,13 @@ async function main() {
 
   let programInfoSkybox = webglUtils.createProgramInfo(gl, [vSrcSB, fSrcSB]);
 
-  // create scene
   let scene = new Scene(
     gl,
     programInfo,
     programInfoSkybox,
 
     lightPosition,
-    cameraSettings,
-
-    canvas, // remove
-    container // remove
+    cameraSettings
   );
 
   await scene.loadScene(
@@ -88,12 +62,28 @@ async function main() {
     "terrain", // ground
     "skybox", // background
     "DeLorean", // car
-    "Cube", // object
-    controlPanel,
-    commands
+    "Cube" // object
   );
 
   scene.render();
+}
+
+function _blockExecution() {
+  utils.setVisibility("reloadError", "block");
+  utils.setVisibility("loader", "none");
+
+  utils.setVisibility("continueButton", "block");
+
+  let button = document.getElementById("continueButton");
+  button.style.display = "block";
+
+  button.addEventListener("click", () => {
+    button.style.display = "none";
+    utils.setVisibility("reloadError", "none");
+    utils.setVisibility("loader", "block");
+
+    _main();
+  });
 }
 
 main();

@@ -3,7 +3,18 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div class="loading" id="loading">  <span class="loader"> </span> </div>
+    <div class="loading" id="loading"> 
+      <span id="reloadError" class= "reloadError"> 
+      Please update the browser ( it must be > 90 ) and reload the game.
+    </span> <br>
+
+    
+    <button id="continueButton" class= "continueButton"> continue anyway</button> 
+
+    <span class="loader" id="loader">
+
+    </span>
+  </div>
 
     <div class="container" id="container">
       <canvas id="canvas" class="canvas"></canvas>
@@ -39,7 +50,9 @@
           <img src="./panel/first-person.png" oncontextmenu="return false;" class="panelImage" id='firstPersonCommand' />
           <img src="./panel/camera-follow.png" oncontextmenu="return false;" class="panelImage" id='cameraFollowCommand'/>
           <img src="./panel/camera-rotate.png" oncontextmenu="return false;" class="panelImage" id='cameraRotateCommand' />
-          </span>
+          <img src="./panel/bump-map.png" oncontextmenu="return false;" class="panelImage" id='bumpMappingCommand' />
+          
+        </span>
           
       </span>
       

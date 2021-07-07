@@ -20,6 +20,7 @@ const commandNames = [
 
   "zoomInCommand",
   "zoomOutCommand",
+  "bumpMappingCommand",
 ];
 
 class ControlPanel {
@@ -118,6 +119,10 @@ class ControlPanel {
 
     this.commands[11].addEventListener("touchstart", () => {
       this._setRotate(); // rotate camera with the target
+    });
+
+    this.commands[14].addEventListener("touchstart", () => {
+      this.bumpMapping = !this.bumpMapping; // enable/disable bump mapping
     });
   }
 
