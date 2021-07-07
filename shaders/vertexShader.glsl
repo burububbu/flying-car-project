@@ -21,8 +21,6 @@ attribute vec4 a_position;
     vec4 worldPosition = u_world * a_position;
     gl_Position = u_projection * u_view * worldPosition;
     
-
-    // pass values to fragment shader
     v_position = vec3(worldPosition) / worldPosition.w;
     v_surfaceToView = u_viewWorldPosition - worldPosition.xyz;
     

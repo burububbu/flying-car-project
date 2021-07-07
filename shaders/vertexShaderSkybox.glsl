@@ -5,5 +5,5 @@ void main() {
   v_position = a_position;
   
   gl_Position = a_position;
-  gl_Position.z = 1.; // pixel have the furthest depht
+  gl_Position.z = 1.; // pixel has the furthest depht
 }
