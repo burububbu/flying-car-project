@@ -1,4 +1,4 @@
-import { isMobileDevice } from "./utils.JS";
+import { isMobileDevice } from "./utils.js";
 
 const colors = ["black", "grey", "green"];
 
