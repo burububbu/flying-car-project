@@ -107,9 +107,11 @@ class Scene {
 
     // --------- draw all except the skybox ----------
     this.gl.enable(this.gl.DEPTH_TEST);
+
     this.gl.depthFunc(this.gl.LESS);
-    this.gl.useProgram(this.programInfo.program);
-    webglUtils.setUniforms(this.programInfo, sharedUniformsAll);
+
+    // this.gl.useProgram(this.programInfo.program);
+    // webglUtils.setUniforms(this.programInfo, sharedUniformsAll);
 
     this.car.doStep(); // update car state
 
@@ -138,6 +140,9 @@ class Scene {
       ...this.car.carSections.flat(),
       ...this.cube,
     ]) {
+      this.gl.useProgram(this.programInfo.program);
+      webglUtils.setUniforms(this.programInfo, sharedUniformsAll);
+
       webglUtils.setBuffersAndAttributes(
         this.gl,
         this.programInfo,
@@ -145,6 +150,7 @@ class Scene {
       );
 
       webglUtils.setUniforms(this.programInfo, uniforms, parts.material);
+
       webglUtils.drawBufferInfo(this.gl, parts.bufferInfo);
     }
 
