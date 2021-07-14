@@ -110,8 +110,8 @@ class Scene {
 
     this.gl.depthFunc(this.gl.LESS);
 
-    // this.gl.useProgram(this.programInfo.program);
-    // webglUtils.setUniforms(this.programInfo, sharedUniformsAll);
+    this.gl.useProgram(this.programInfo.program);
+    webglUtils.setUniforms(this.programInfo, sharedUniformsAll);
 
     this.car.doStep(); // update car state
 
@@ -140,9 +140,6 @@ class Scene {
       ...this.car.carSections.flat(),
       ...this.cube,
     ]) {
-      this.gl.useProgram(this.programInfo.program);
-      webglUtils.setUniforms(this.programInfo, sharedUniformsAll);
-
       webglUtils.setBuffersAndAttributes(
         this.gl,
         this.programInfo,
